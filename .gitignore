@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+.DS_Store
+.env
+*.log
+# large per-shot caches: share via the compute box, not git
+*.npz
+results/raw/
