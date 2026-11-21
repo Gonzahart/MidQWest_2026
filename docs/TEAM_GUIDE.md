@@ -75,7 +75,7 @@ Loss flags cut BP-OSD's error rate about 4×. Under 1% loss plain BP converges o
 
 Each row is owned by one person; put your name in the Owner cell when you take it.
 
-| # | Task | Owner | Machine | Due | Done when | Status
+| # | Task | Owner | Machine | Due | Done when | Status|
 | --- | --- | --- | --- | --- | --- |
 | 1 | Team GitHub repo with kit + `loss_circuit.py` + `evaluate.py`; per-shot results format (.npz: fail, seconds, iterations); README skeleton | Integration | laptop | 4:30 PM | Everyone can clone and run tests | |
 | 2 | No-loss baseline sweep: BP-OSD, relay-BP-5 (kit default), relay-BP-1 (`stop_nconv=1`) at p = 0.003 / 0.004 / 0.005, 10k shots, per-shot results cached | Compute | 3060 box CPUs + BlueQubit | start now, done ~10 PM | p = 0.004 matches the kit README table within error | |
