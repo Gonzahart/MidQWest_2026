@@ -1,0 +1,6 @@
+2000 shots at p=0.004, p_loss=0.005, 12 cycles, failures [X Z]
+bposd        failures [104  88]  per cycle 8.10e-03 +- 5.9e-04  mean 428.9 ms  p99 1304 ms
+bposd+H      failures [64 68]  per cycle 5.63e-03 +- 4.9e-04  mean 902.5 ms  p99 3086 ms
+relay        failures [24 20]  per cycle 1.85e-03 +- 2.8e-04  mean 474.3 ms  p99 4804 ms
+relay+H      failures [22 21]  per cycle 1.81e-03 +- 2.8e-04  mean 915.5 ms  p99 8377 ms
+bp>relay+H   failures [22 15]  per cycle 1.55e-03 +- 2.6e-04  mean 910.3 ms  p99 8853 ms  to stage 2 68.7%

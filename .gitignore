@@ -4,6 +4,6 @@ __pycache__/
 .DS_Store
 .env
 *.log
-# large per-shot caches: share via the compute box, not git
+# large training datasets stay local; per-shot sweep results (small) are committed
 *.npz
-results/raw/
+!challenge-1-ml-decoder-kit/results/*.npz
