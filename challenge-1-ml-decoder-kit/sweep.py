@@ -15,7 +15,7 @@ different machines can be merged into one result, and every decoder sees identic
 Decoders: bposd (kit settings), relay5 (kit relay-BP, stop_nconv=5), relay1 (stop_nconv=1), bp (plain
 min-sum BP, 80 iterations). With --p-loss > 0, --loss-mode chooses how loss flags are used:
 unaware (ignored), rows (flags as extra rows of H)
-or reweight (per-shot priors from the flags: fired -> 1/4, unfired -> ~0; H keeps the kit size). Output: results/<name>_shard<i>of<n>.npz with
+or reweight (per-shot priors from the flags: fired -> P(column | loss), 1/2 when Y and Z merge; unfired -> ~0; H keeps the kit size). Output: results/<name>_shard<i>of<n>.npz with
 shot indices, fail [X, Z], seconds [X, Z] and, for relay/bp, iterations [X, Z].
 Each worker process decodes single-threaded; --workers defaults to all cores.
 """
@@ -53,7 +53,7 @@ class Reweighted:
     left maximally mixed), columns of UNFIRED flags get ~0, all others keep their DEM prior. Decodes on
     the check rows only, so H stays the kit's size. BP-OSD updates priors in place; relay-BP is rebuilt."""
 
-    def __init__(self, name, H_full, priors, is_herald):
+    def __init__(self, name, H_full, priors, is_herald, p_loss):
         H_full = H_full.tocsr()
         self.check_rows, self.herald_rows = np.flatnonzero(~is_herald), np.flatnonzero(is_herald)
         H_check, H_herald = H_full[self.check_rows].tocsc(), H_full[self.herald_rows].tocsc()
@@ -61,6 +61,8 @@ class Reweighted:
         self.H, self.priors, self.name = H_check[:, keep], priors[keep], name
         self.herald = H_herald[:, keep].tocsr()
         self.has_herald = np.asarray(self.herald.sum(axis=0)).ravel() > 0
+        # P(column fired | its herald fired) = prior / p_loss: 1/2 when Y and Z merge into one column.
+        self.given_loss = np.clip(self.priors / p_loss, 1e-9, 0.5)
         self.keep = keep
         self.decoder = build(name, self.H, self.priors)
 
@@ -68,7 +70,7 @@ class Reweighted:
         p = self.priors.copy()
         p[self.has_herald] = 1e-9
         hit = np.asarray(self.herald[np.flatnonzero(fired)].sum(axis=0)).ravel() > 0
-        p[hit] = 0.25
+        p[hit] = self.given_loss[hit]
         return p
 
     def decode(self, syndrome_full):
@@ -78,6 +80,13 @@ class Reweighted:
         else:
             self.decoder = build(self.name, self.H, p)
         return self.decoder.decode(syndrome_full[self.check_rows])
+
+
+def solution_features(error, priors, success):
+    """(converged, Hamming weight, log-likelihood of the correction under the priors)."""
+    on = error.astype(bool)
+    llr = np.log(priors[on] / (1 - priors[on])).sum()
+    return float(success), float(on.sum()), float(llr + np.log1p(-priors).sum())
 
 
 def decode_one(decoder, name, syndrome):
@@ -107,10 +116,11 @@ def work(job):
     fail = np.zeros((len(idx), 2), bool)
     secs = np.zeros((len(idx), 2))
     iters = np.zeros((len(idx), 2), np.int32)
+    feats = np.full((len(idx), 2, 3), np.nan)   # converged, solution weight, log-likelihood
     for b, (H, L, priors, det, obs, is_herald) in enumerate(problems(args)):
         reweight = args.loss_mode == "reweight" and args.p_loss > 0
         if reweight:
-            rw = Reweighted(args.decoder, H, priors, is_herald)
+            rw = Reweighted(args.decoder, H, priors, is_herald, args.p_loss)
             L = L.tocsc()[:, rw.keep]
         else:
             decoder = build(args.decoder, H, priors)
@@ -120,9 +130,12 @@ def work(job):
                 error, iters[j, b] = np.asarray(rw.decode(det[k]), np.uint8), -1
             else:
                 error, iters[j, b] = decode_one(decoder, args.decoder, det[k])
+                if args.decoder.startswith("relay"):
+                    satisfied = not ((H @ error) % 2 != det[k]).any()
+                    feats[j, b] = solution_features(error, priors, satisfied)
             secs[j, b] = time.perf_counter() - t
             fail[j, b] = ((L @ error) % 2 != obs[k]).any()
-    return idx, fail, secs, iters
+    return idx, fail, secs, iters, feats
 
 
 def run(args):
@@ -135,10 +148,11 @@ def run(args):
     start = time.time()
     with Pool(args.workers) as pool:
         parts = pool.map(work, [(args, c) for c in chunks])
-    idx, fail, secs, iters = (np.concatenate(x) for x in zip(*parts))
+    idx, fail, secs, iters, feats = (np.concatenate(x) for x in zip(*parts))
     np.savez_compressed(path, decoder=args.decoder, p=args.p, p_loss=args.p_loss, loss_mode=args.loss_mode,
                         seed=args.seed, shots=args.shots, shard=args.shard, nshards=args.nshards,
-                        shot_idx=idx, fail=fail, seconds=secs, iterations=iters, host=os.uname().nodename,
+                        shot_idx=idx, fail=fail, seconds=secs, iterations=iters, features=feats,
+                        feature_names=np.asarray(["converged", "weight", "loglik"]), host=os.uname().nodename,
                         workers=args.workers, cycles=CYCLES, basis=np.asarray(["X", "Z"]),
                         stim_version=stim.__version__)
     rate, err = per_cycle_rate(fail.any(axis=1), CYCLES)
@@ -175,7 +189,7 @@ def main():
     r.add_argument("--p-loss", type=float, default=0.0)
     r.add_argument("--loss-mode", choices=["unaware", "rows", "reweight"], default="unaware")
     r.add_argument("--shots", type=int, default=10000)
-    r.add_argument("--seed", type=int, default=1)
+    r.add_argument("--seed", type=int, default=2, help="2 = test seed; use 1 only for router training data")
     r.add_argument("--shard", type=int, default=0)
     r.add_argument("--nshards", type=int, default=1)
     r.add_argument("--workers", type=int, default=os.cpu_count())
