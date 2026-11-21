@@ -9,6 +9,7 @@ Decoder names:
   bp>relay+H            hierarchical: fast plain BP first; if BP does not converge to a
                         solution of the syndrome, the shot is passed to relay-BP (with heralds)
   bp>bposd+H            the same with BP-OSD as the second stage
+  bp+H, relay1+H       standalone fast BP and relay-BP-1 with heralds
 
 Both memory experiments (X and Z) are sampled with the same circuit noise, decoded separately,
 and paired shot by shot as in the kit. Output: failures, logical error rate per cycle, mean and
@@ -28,6 +29,7 @@ from multiprocessing import Pool
 from pathlib import Path
 
 import numpy as np
+import stim
 from ldpc import BpDecoder
 
 from circuit import sample
@@ -75,7 +77,12 @@ def build(name, H, priors):
     if name.startswith("bp>"):
         second = {"relay+H": relay_decoder, "bposd+H": bposd_decoder}[name[3:]]
         return Hierarchical(H, priors, second(H, priors))
-    return {"bposd": bposd_decoder, "relay": relay_decoder}[name.removesuffix("+H")](H, priors)
+    base = name.removesuffix("+H")
+    if base == "bp":
+        return BpDecoder(H, error_channel=list(priors), **FAST_BP)
+    if base == "relay1":
+        return relay_decoder(H, priors, stop_nconv=1)
+    return {"bposd": bposd_decoder, "relay": relay_decoder}[base](H, priors)
 
 
 def problems(p, p_loss, shots, seed, use_heralds):
@@ -135,6 +142,8 @@ def main():
     parser.add_argument("--out-npz", type=Path, help="save per-shot outcomes, timings, and iterations to a new NPZ file")
     args = parser.parse_args()
     if args.out_npz is not None:
+        if args.cycles != 12:
+            parser.error("the exported Gross memory circuits use 12 cycles")
         if args.out_npz.resolve() == Path(args.csv).resolve():
             parser.error("--out-npz and --csv must use different paths")
         if args.out_npz.exists():
@@ -192,6 +201,9 @@ def main():
                 seed=args.seed,
                 cycles=args.cycles,
                 workers=args.workers,
+                host=os.uname().nodename,
+                stim_version=stim.__version__,
+                shots=args.shots,
             )
 
 

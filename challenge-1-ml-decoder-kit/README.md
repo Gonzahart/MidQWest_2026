@@ -122,3 +122,34 @@ Z checks.
 ```bash
 pip install pytest && python -m pytest test_kit.py
 ```
+
+## Compare routing policies from cached shots
+
+Run all four decoders on one machine with the same worker configuration. Use
+fresh output paths and a held-out seed.
+
+```bash
+python evaluate.py --p 0.004 --p-loss 0.005 --seed 42 --shots 20 --workers 1 \
+  --decoders relay1+H relay+H 'bp>relay+H' bp+H \
+  --csv router_smoke_raw.csv --out-npz router_smoke.npz
+python router_report.py router_smoke.npz --out router_smoke_report
+```
+
+The report writes a CSV and a PNG. Repeat for each physical error rate with
+separate output paths. Relay-BP-1 and Relay-BP-5 can also come from complete
+`sweep.py` caches (including shards). Pass one cache source per decoder. Use
+`--loss-mode rows` for a sweep at nonzero loss. The report checks the run
+settings, host, worker count, basis order and complete shot IDs. Older caches
+that lack the timing or sampling metadata need to be regenerated.
+
+To add a learned policy, pass `--decisions held_out_router.npz`. The router
+archive needs `shot` (original integer shot IDs), `basis` (X, Z), `route`
+(boolean array indexed by shot and basis, true to invoke Relay-BP-5), and the
+evaluation cache's scalar `p`, `p_loss`, `seed`, `shots`, `cycles`, and
+`stim_version` values. Generate these decisions from held-out inputs. The
+report replays the decisions using standalone fast BP and Relay-BP-5 results
+and compares them with a seeded random policy matched to the learned policy's
+fallback count in each basis. Replay latency adds the cached decoder costs and
+excludes model inference and feature extraction. Relay-BP can depend on
+decoder call history, so use a live run for final learned-policy timing and
+accuracy claims.
