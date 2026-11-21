@@ -26,6 +26,7 @@ import time
 from multiprocessing import Pool
 
 import numpy as np
+import stim
 from ldpc import BpDecoder
 
 from circuit import sample
@@ -137,7 +138,9 @@ def run(args):
     idx, fail, secs, iters = (np.concatenate(x) for x in zip(*parts))
     np.savez_compressed(path, decoder=args.decoder, p=args.p, p_loss=args.p_loss, loss_mode=args.loss_mode,
                         seed=args.seed, shots=args.shots, shard=args.shard, nshards=args.nshards,
-                        shot_idx=idx, fail=fail, seconds=secs, iterations=iters, host=os.uname().nodename)
+                        shot_idx=idx, fail=fail, seconds=secs, iterations=iters, host=os.uname().nodename,
+                        workers=args.workers, cycles=CYCLES, basis=np.asarray(["X", "Z"]),
+                        stim_version=stim.__version__)
     rate, err = per_cycle_rate(fail.any(axis=1), CYCLES)
     print(f"done in {time.time() - start:.0f}s: failures {fail.sum(axis=0)}, per cycle {rate:.2e} +- {err:.1e}, "
           f"mean {secs.sum(axis=1).mean() * 1e3:.1f} ms", flush=True)
