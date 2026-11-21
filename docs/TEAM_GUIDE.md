@@ -75,18 +75,18 @@ Loss flags cut BP-OSD's error rate about 4×. Under 1% loss plain BP converges o
 
 Each row is owned by one person; put your name in the Owner cell when you take it.
 
-| # | Task | Owner | Machine | Due | Done when |
+| # | Task | Owner | Machine | Due | Done when | Status
 | --- | --- | --- | --- | --- | --- |
-| 1 | Team GitHub repo with kit + `loss_circuit.py` + `evaluate.py`; per-shot results format (.npz: fail, seconds, iterations); README skeleton | Integration | laptop | 4:30 PM | Everyone can clone and run tests |
-| 2 | No-loss baseline sweep: BP-OSD, relay-BP-5 (kit default), relay-BP-1 (`stop_nconv=1`) at p = 0.003 / 0.004 / 0.005, 10k shots, per-shot results cached | Compute | 3060 box CPUs + BlueQubit | start now, done ~10 PM | p = 0.004 matches the kit README table within error |
-| 3 | Herald → error-column map + per-shot prior reweighting (fired ≈ 1/4, unfired 0) for BP-OSD (`update_channel_probs`) and relay-BP (rebuild per shot) | Sean (QEC lead) | laptop | 6 PM | Reweighted BP-OSD decodes a lossy shot |
-| 4 | Loss sweep: p_loss = 0, 0.002, 0.005, 0.01 × {loss-unaware, flags as H rows, reweighted priors} | Sean → Compute | 3060 box / BlueQubit | start ~7 PM | Cached results + one plot |
-| 5 | Stage-1 min-sum BP logging features at iterations 10/20/40/80 (unsatisfied checks, LLR sign flips, mean abs LLR, converged) + OSD-0 disagreement; 20k training shots at p = 0.005, seed 1 | Stage-1 BP | laptop | 10 PM | Features saved to .npz |
-| 6 | Router: labels (not converged by 80, or logically wrong); logistic regression then boosted trees; compare to "converged" rule, OSD-0 threshold, random routing | Router | laptop | 4 AM | AUROC on a held-out seed for all |
-| 7 | `HierarchicalDecoder.decode(syndrome)` plugging into `decoders.score`; end-to-end run with a dummy router; plot scripts | Integration | laptop | 10 PM | One results row + one plot |
-| 8 | Final timing: one machine, single-threaded, about 1–2k shots per point | Compute | 3060 box | after 8 AM | Mean + p99 table |
-| 9 | Slides and talk: outline at 10 PM, fill after the 8 AM freeze, rehearse twice | Integration leads, all help | — | 1 PM Sun | Rehearsed |
-| S | Stretch (after 4 AM only): learned relay-BP memory strengths via `explicit_gammas`; learned loss-prior network; bb72 code | whoever is ahead | 3060 GPU / BlueQubit GPU | — | — |
+| 1 | Team GitHub repo with kit + `loss_circuit.py` + `evaluate.py`; per-shot results format (.npz: fail, seconds, iterations); README skeleton | Integration | laptop | 4:30 PM | Everyone can clone and run tests | |
+| 2 | No-loss baseline sweep: BP-OSD, relay-BP-5 (kit default), relay-BP-1 (`stop_nconv=1`) at p = 0.003 / 0.004 / 0.005, 10k shots, per-shot results cached | Compute | 3060 box CPUs + BlueQubit | start now, done ~10 PM | p = 0.004 matches the kit README table within error | |
+| 3 | Herald → error-column map + per-shot prior reweighting (fired ≈ 1/4, unfired 0) for BP-OSD (`update_channel_probs`) and relay-BP (rebuild per shot) | Sean (QEC lead) | laptop | 6 PM | Reweighted BP-OSD decodes a lossy shot | |
+| 4 | Loss sweep: p_loss = 0, 0.002, 0.005, 0.01 × {loss-unaware, flags as H rows, reweighted priors} | Sean → Compute | 3060 box / BlueQubit | start ~7 PM | Cached results + one plot | |
+| 5 | Stage-1 min-sum BP logging features at iterations 10/20/40/80 (unsatisfied checks, LLR sign flips, mean abs LLR, converged) + OSD-0 disagreement; 20k training shots at p = 0.005, seed 1 | Stage-1 BP | laptop | 10 PM | Features saved to .npz | |
+| 6 | Router: labels (not converged by 80, or logically wrong); logistic regression then boosted trees; compare to "converged" rule, OSD-0 threshold, random routing | Router | laptop | 4 AM | AUROC on a held-out seed for all | |
+| 7 | `HierarchicalDecoder.decode(syndrome)` plugging into `decoders.score`; end-to-end run with a dummy router; plot scripts | Integration | laptop | 10 PM | One results row + one plot | |
+| 8 | Final timing: one machine, single-threaded, about 1–2k shots per point | Compute | 3060 box | after 8 AM | Mean + p99 table | |
+| 9 | Slides and talk: outline at 10 PM, fill after the 8 AM freeze, rehearse twice | Integration leads, all help | — | 1 PM Sun | Rehearsed | |
+| S | Stretch (after 4 AM only): learned relay-BP memory strengths via `explicit_gammas`; learned loss-prior network; bb72 code | whoever is ahead | 3060 GPU / BlueQubit GPU | — | — | |
 
 ## Compute plan
 
