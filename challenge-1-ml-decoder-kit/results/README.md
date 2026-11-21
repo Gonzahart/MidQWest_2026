@@ -32,3 +32,32 @@ Takeaways
 - Reweighting halves relay-BP-5's error rate under 0.5% loss and brings it close to the kit's no-loss value (8.7e-4 at p = 0.004), at no extra mean latency.
 - BP-OSD improves 1.5x. Reweighting beats flags-as-rows on both accuracy and speed.
 - This is the "naive loss-aware" baseline that any ML loss component must beat.
+
+## Held-out Relay-BP-1 routing pilot
+
+Physical error rate 0.005, stock Gross circuits without loss. Training used 300
+X/Z pairs (X seed 41, Z seed 42) and produced 11 basis shots where Relay-BP-5
+rescued Relay-BP-1. The held-out set used 200 pairs (X seed 2, Z seed 3).
+Both decoders ran on the same shots. Timings were gathered on an arm64 Mac
+with eight worker processes and single-threaded BLAS.
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python relay_router_pilot.py \
+  --workers 8 --out /tmp/relay_router_pilot_p005
+```
+
+The logistic model uses Relay-BP-1 syndrome weight, iterations, convergence,
+and two posterior confidence summaries. The simple rule ranks nonconvergence
+first and longer runs next. The learned, simple, and random policies each
+route exactly 20% of shots in each basis, using an offline ranking budget fixed
+before evaluation. Replay timing sums decoder calls and excludes feature
+extraction and inference. Live Relay-BP outcomes can vary with call history.
+
+On the held-out split, the learned and simple rules each failed 12 pairs, with
+one pair won by each rule and an exact paired p-value of 1. Learned routing
+reduced mean replay latency from 815 ms to 618 ms, with p99 of 5,633 ms for both.
+Relay-BP-5 alone also failed 12 pairs, with 714 ms mean and 3,335 ms p99.
+The pilot gives no evidence of an accuracy gain over the simple rule. The mean
+latency difference needs a larger held-out sample and live timing.
+
+[Summary CSV](relay_router_pilot_p005.csv) · [Pilot cache](relay_router_pilot_p005.npz)
