@@ -1,0 +1,16 @@
+p,policy,shot_pairs,sent_to_stage2,failed_pairs,mean_ms_per_pair,p99_ms_per_pair,LER_per_cycle,LER_err
+0.003,Relay-BP-5 alone (kit baseline),10000,,13,69.6,506,1.08e-04,3.0e-05
+0.003,Relay-BP-1 alone,10000,,17,14.2,127,1.42e-04,3.4e-05
+0.003,Plain BP → relay-BP-5 if BP not converged,10000,2948,12,47.6,475,1.00e-04,2.9e-05
+0.003,Plain BP → relay-BP-1 if BP not converged,10000,2948,16,23.2,144,1.33e-04,3.3e-05
+0.003,Perfect router: relay-BP-1 → relay-BP-5 on relay-BP-1's wrong shots (upper bound),10000,17,6,15.8,141,5.00e-05,2.0e-05
+0.004,Relay-BP-5 alone (kit baseline),10000,,96,364.6,6431,8.04e-04,8.2e-05
+0.004,Relay-BP-1 alone,10000,,120,68.9,1307,1.01e-03,9.2e-05
+0.004,Plain BP → relay-BP-5 if BP not converged,10000,7637,94,328.7,6456,7.87e-04,8.1e-05
+0.004,Plain BP → relay-BP-1 if BP not converged,10000,7637,119,84.6,1327,9.97e-04,9.1e-05
+0.004,Perfect router: relay-BP-1 → relay-BP-5 on relay-BP-1's wrong shots (upper bound),10000,120,62,110.2,2281,5.18e-04,6.6e-05
+0.005,Relay-BP-5 alone (kit baseline),10000,,791,1136.3,5774,6.84e-03,2.4e-04
+0.005,Relay-BP-1 alone,10000,,964,472.4,4547,8.41e-03,2.7e-04
+0.005,Plain BP → relay-BP-5 if BP not converged,10000,13607,789,1136.4,5819,6.83e-03,2.4e-04
+0.005,Plain BP → relay-BP-1 if BP not converged,10000,13607,957,497.7,4581,8.35e-03,2.7e-04
+0.005,Perfect router: relay-BP-1 → relay-BP-5 on relay-BP-1's wrong shots (upper bound),10000,998,615,805.5,8889,5.28e-03,2.1e-04
