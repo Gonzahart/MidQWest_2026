@@ -155,3 +155,24 @@ The two-sided exact sign test counts pairs where only one setting failed.
 On the PC, reweighting reduced relay-BP-5's logical error rate per cycle by a factor of 2.7. The Mac also showed a reduction, about 2×. For BP-OSD, the paired comparison found no detectable difference between the two fired-herald priors at this noise level.
 
 Mean relay-BP-5 time fell from 523 to 345 ms on the PC. Eight workers ran concurrently, so these timings are approximate. Sean keeps the per-shot files (`results/t3_*`) on the PC because their run metadata matches the Mac files and `summarize` would merge them.
+
+## Loss sweep, relay-BP-5 (Sat 9:15 PM) — headline result
+Logical error rate per cycle, seed 2. p = 0.003: 20,000 pairs per point (BlueQubit). p = 0.004 / 0.005: 2,000 pairs
+per point (Gonzalo's Mac). 0% loss: 10,000-pair no-loss runs (BlueQubit). Figure: `loss_sweep_relay5.png`.
+
+| p | Loss | Loss ignored | Loss-reweighted | Gain |
+|---|---|---|---|---|
+| 0.003 | 0% | 8.3e-5 | 8.3e-5 | - |
+| 0.003 | 0.2% | 7.1e-5 ± 1.7e-5 | 6.3e-5 ± 1.6e-5 | 1.1x (n.s.) |
+| 0.003 | 0.5% | 1.92e-4 ± 0.28e-4 | 1.08e-4 ± 0.21e-4 | 1.8x |
+| 0.003 | 1.0% | 4.97e-4 ± 0.46e-4 | 1.04e-4 ± 0.21e-4 | **4.8x** |
+| 0.004 | 0.2% | 9.2e-4 | 5.9e-4 | 1.6x |
+| 0.004 | 0.5% | 1.81e-3 | 1.05e-3 | 1.7x |
+| 0.004 | 1.0% | 3.92e-3 | 1.51e-3 | 2.6x |
+| 0.005 | 0.2% | 8.97e-3 | 7.19e-3 | 1.25x |
+| 0.005 | 0.5% | 1.27e-2 | 7.24e-3 | 1.75x |
+| 0.005 | 1.0% | 2.26e-2 | 1.03e-2 | 2.2x |
+
+The gain is largest where ordinary noise is lowest: at p = 0.003 and 1% loss, ignoring loss makes the decoder 6x worse
+than no loss; with reweighted priors it is only 1.25x worse. Mean decode times stay in the same range (p = 0.003: 183-208 ms
+reweighted vs 165-310 ms ignored, 20 parallel workers; not final timing).
