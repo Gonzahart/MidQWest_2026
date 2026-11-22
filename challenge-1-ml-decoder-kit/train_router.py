@@ -260,7 +260,7 @@ def main():
         rows.append(dict(policy="random", budget=budget, auroc="", **replay(flat_route.reshape(shape), r1, r5, cycles)))
 
     with open(f"{args.out}.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
     print(f"\n{'policy':30s} {'budget':>6s} {'AUROC':>6s} {'esc':>6s} {'fail':>5s} {'LER/cycle':>9s} {'+-':>8s} {'mean ms':>8s}")
