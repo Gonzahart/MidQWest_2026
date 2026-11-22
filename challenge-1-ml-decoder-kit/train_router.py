@@ -38,7 +38,7 @@ FEATURES = ["converged", "weight", "loglik", "syndrome_weight", "posterior_abs_m
 META = ("p", "p_loss", "seed", "shots", "cycles", "stim_version")
 
 
-def load(patterns, decoder):
+def load(patterns, decoder, *, allow_partial_labels=False):
     """Merge shards of one sweep run: (meta, shot ids, fail [n,2], seconds [n,2], X [n,2,f])."""
     paths = sorted(set(sum((glob.glob(p) for p in patterns), [])))
     if not paths:
@@ -56,6 +56,12 @@ def load(patterns, decoder):
     if len(np.unique(idx)) != len(idx):
         raise SystemExit(f"{decoder}: duplicate shot ids across shards")
     fail = np.concatenate([d["fail"] for d in parts])[order]
+    if any("evaluated" in d for d in parts):
+        if not allow_partial_labels:
+            raise SystemExit(f"{decoder}: partially evaluated archives are for rescue training only")
+        evaluated = np.concatenate([d["evaluated"] if "evaluated" in d
+                                    else np.ones_like(d["fail"]) for d in parts])[order]
+        fail = np.ma.array(fail, mask=~evaluated)
     secs = np.concatenate([d["seconds"] for d in parts])[order]
     feats = None
     if "features" in parts[0] and parts[0]["features"].shape[-1] >= 6:
@@ -148,14 +154,16 @@ def main():
             raise SystemExit(f"Relay-BP test caches differ in {key}")
     train_labels = tr_fail
     if args.train_relay5:
-        train5_meta, train5_idx, train5_fail, _, _ = load(args.train_relay5, "relay5")
+        train5_meta, train5_idx, train5_fail, _, _ = load(args.train_relay5, "relay5", allow_partial_labels=True)
         if train5_meta != tr_meta:
             raise SystemExit("rescue labels require the original training sample batch metadata, including total shots")
         positions = np.searchsorted(tr_idx, train5_idx)
         if not len(positions) or (positions >= len(tr_idx)).any() or not np.array_equal(tr_idx[positions], train5_idx):
             raise SystemExit("Relay-BP-5 training shot IDs are not a subset of Relay-BP-1 training IDs")
         tr_feats = tr_feats[positions]
-        train_labels = tr_fail[positions] & ~train5_fail
+        if np.any(tr_fail[positions] & np.ma.getmaskarray(train5_fail)):
+            raise SystemExit("a failed Relay-BP-1 training shot is missing its fallback label")
+        train_labels = tr_fail[positions] & ~np.ma.filled(train5_fail, False)
 
     calibration_feats = tr_feats
     calibration_seed = tr_meta["seed"]
@@ -207,6 +215,10 @@ def main():
     rng = np.random.default_rng(args.random_seed)
     matched_rng = np.random.default_rng(args.random_seed)
     scorers = {n: m.score for n, m in models.items()} | {"simple rule": rule}
+    if args.calibration:
+        simple_scores = rule(x_te).reshape(shape)
+        tie_breaks = np.random.default_rng(args.random_seed).random(shape)
+        simple_ranks = np.argsort(np.lexsort((tie_breaks, -simple_scores), axis=0), axis=0)
     for name, scorer in scorers.items():
         s_cal = scorer(flat(calibration_feats)).reshape(calibration_feats.shape[:2])
         s_te = scorer(x_te).reshape(shape)
@@ -221,8 +233,15 @@ def main():
             rows.append(dict(policy=f"random matched to {name}", budget=budget, auroc="",
                              **replay(matched, r1, r5, cycles)))
             if name in models:
+                controls = {"random_route": matched}
+                if args.calibration:
+                    # Offline baseline at the learned policy's exact realized count.
+                    simple_matched = simple_ranks < route.sum(axis=0)
+                    controls["simple_route"] = simple_matched
+                    rows.append(dict(policy=f"simple matched to {name}", budget=budget, auroc="",
+                                     **replay(simple_matched, r1, r5, cycles)))
                 np.savez_compressed(f"{args.out}_decisions_{name}_{budget}.npz", shot=te_idx, basis=np.asarray(["X", "Z"]),
-                                    route=route, **{k: te_meta[k] for k in META if k in te_meta})
+                                    route=route, **controls, **{k: te_meta[k] for k in META if k in te_meta})
                 if args.save_models:
                     from joblib import dump
 

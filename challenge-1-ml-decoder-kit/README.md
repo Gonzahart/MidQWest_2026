@@ -198,6 +198,12 @@ Relay-BP-1 calibration cache at the test noise rate and use seed 2 only for
 held-out comparison. Prefer calibration seeds 4 or higher to keep both basis
 seeds disjoint from the test batch.
 
+To generate a fresh matched training set on one machine, run
+`python collect_rescue_labels.py --out /tmp/local_rescue_training` and use
+its two archives together. The generator only runs fallback on failed
+first-stage shots. The fallback archive has an evaluation mask and is
+restricted to training labels.
+
 ```bash
 python train_router.py --train "$TRAIN_RELAY1" --train-relay5 "$TRAIN_RELAY5" \
   --calibration "$CALIBRATION_RELAY1" --test-relay1 "$TEST_RELAY1" \
