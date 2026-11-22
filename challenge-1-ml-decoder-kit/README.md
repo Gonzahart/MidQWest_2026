@@ -171,8 +171,18 @@ pair, and the fraction of basis shots escalated. Peak RSS includes the Python
 runtime, sampled data, and decoder state. Decode latency excludes simulation
 and decoder construction before decoding.
 
-For final timing, use 1,000–2,000 pairs on the agreed benchmark machine and
-pass the integrated live router alongside the defaults via `--decoders` once
-its name is registered in `evaluate.build`. Router feature extraction,
-inference, and fallback should run inside its decode call. Confirm the live
-router exposes its escalation count through `escalated`.
+For final no-loss timing, use the agreed benchmark machine and a checkout
+that contains the live `relay_router_pilot.live_compare` integration. Supply
+the model NPZ from that version of the pilot; its feature names must match,
+and its training seeds must be disjoint from the benchmark seeds.
+
+```bash
+for p in 0.003 0.004 0.005; do
+  python benchmark_timing.py --p "$p" --p-loss 0 --shots 1000 --seed 2 \
+    --decoders relay1+H relay+H 'bp>relay+H' live-relay \
+    --live-model /path/to/trained_router.npz --out "final_timing_p${p}.csv"
+done
+```
+
+The live row includes feature extraction, inference, and fallback in each
+decode call. Run these commands sequentially on an idle benchmark machine.
