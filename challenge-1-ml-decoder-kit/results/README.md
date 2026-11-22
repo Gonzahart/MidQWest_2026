@@ -106,3 +106,22 @@ live three-rate benchmark. Replay latency excludes feature extraction and
 inference.
 
 [Summary CSV](relay_router_scaleup_p005.csv) · [Replay cache](relay_router_scaleup_p005.npz)
+
+## Task #8 single-worker timing smoke test
+
+30 matched X/Z pairs at p = 0.005, no loss, seed 2 on an Apple M5 with one
+decoder worker and numerical library threads set to one. Each policy ran in
+a fresh process. The small sample verifies the timing and memory pipeline.
+Peak worker RSS includes the runtime, sampled data, and decoder state.
+
+| Policy | Failed pairs | Mean ms | p99 ms | Peak worker RSS (MiB) |
+|---|---:|---:|---:|---:|
+| Relay-BP-1 | 9 | 597.2 | 2,139.5 | 117.2 |
+| Relay-BP-5 | 5 | 891.8 | 2,379.4 | 117.0 |
+| Convergence-only | 6 | 903.6 | 2,172.1 | 119.5 |
+
+[Full smoke-test CSV](single_worker_timing_smoke_p005.csv) ·
+[Run instructions](../README.md#single-worker-timing-and-resource-benchmark)
+
+The final 1,000–2,000-pair comparison is pending the live router from task #7
+and the agreed benchmark machine.

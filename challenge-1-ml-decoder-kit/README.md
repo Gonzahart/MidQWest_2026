@@ -153,3 +153,26 @@ fallback count in each basis. Replay latency adds the cached decoder costs and
 excludes model inference and feature extraction. Relay-BP can depend on
 decoder call history, so use a live run for final learned-policy timing and
 accuracy claims.
+
+## Single-worker timing and resource benchmark
+
+Run the timing harness on the benchmark machine (macOS or Linux):
+
+```bash
+python benchmark_timing.py --p 0.005 --p-loss 0 --shots 30 --seed 2 \
+  --out timing_smoke.csv
+```
+
+The default policies are Relay-BP-1, Relay-BP-5, and the convergence-only
+router. Each policy sees the same X/Z shots and runs in its own process, one
+at a time. The harness sets numerical library thread counts to one and records
+the CPU, peak worker RSS, logical failures, mean and p99 decode time per X/Z
+pair, and the fraction of basis shots escalated. Peak RSS includes the Python
+runtime, sampled data, and decoder state. Decode latency excludes simulation
+and decoder construction before decoding.
+
+For final timing, use 1,000–2,000 pairs on the agreed benchmark machine and
+pass the integrated live router alongside the defaults via `--decoders` once
+its name is registered in `evaluate.build`. Router feature extraction,
+inference, and fallback should run inside its decode call. Confirm the live
+router exposes its escalation count through `escalated`.
