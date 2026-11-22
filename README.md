@@ -31,3 +31,41 @@ python -m pytest test_kit.py
 python baseline.py --p 0.004 --shots 500
 python evaluate.py --p 0.004 --p-loss 0.005 --shots 200
 ```
+
+## Reproduce the frozen truth-table routers
+
+From `challenge-1-ml-decoder-kit/` with the quick-start environment active,
+replay both tables on the committed no-loss seed-16 run at p = 0.005.
+The two inputs are matched Relay-BP-1 and Relay-BP-5 per-shot archives from
+the same host, with 1,000 X/Z pairs and one worker.
+
+```bash
+timing="results/timing/final timing"
+suffix="p0.005_l0.0_unaware_s16_n1000_shard0of1.npz"
+for table in truth_table_router_frozen truth_table_router_gpu_cost_frozen; do
+  python truth_table_router.py \
+    "$timing/relay1_$suffix" "$timing/relay5_$suffix" \
+    --table "results/truth table/$table.json" \
+    --out "results/repro/${table}_p0.005_s16.csv"
+done
+```
+
+Pass `--table` explicitly because the script's default path uses an underscore
+and the repository folder uses a space. The frozen policies are the
+[CPU-priced table](challenge-1-ml-decoder-kit/results/truth%20table/truth_table_router_frozen.json)
+and the
+[GPU-priced table](challenge-1-ml-decoder-kit/results/truth%20table/truth_table_router_gpu_cost_frozen.json).
+To score another held-out run, pass its matched Relay-BP-1 and Relay-BP-5
+archives and choose a new CSV output path. The replay prints paired failure
+comparisons and writes logical error rate, escalation rate, and latency to CSV.
+
+Both replay commands use the decode times recorded in the input archives,
+including when scoring the GPU-priced policy. The separate
+[GPU cost projection](challenge-1-ml-decoder-kit/results/truth%20table/gpu_cost_projection.py)
+estimates GPU fallback timing by scaling the recorded Relay-BP-5 times.
+
+| Configuration | CPU | Host memory | GPU memory |
+|---|---|---|---|
+| Single-worker Relay-BP benchmarks | 1 CPU core | ~120 MiB peak worker RSS in the CPU smoke test | ~22 MiB additional device memory observed in the exploratory GPU probe |
+
+[CPU timing and memory smoke test](challenge-1-ml-decoder-kit/results/README.md#task-8-single-worker-timing-smoke-test) · [GPU timing and memory notes](challenge-1-ml-decoder-kit/results/Sean%20GPU-relay/README.md#results)
