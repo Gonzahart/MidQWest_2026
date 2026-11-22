@@ -48,7 +48,7 @@ python baseline.py --p 0.004 --shots 500
 
 ## Status
 
-Loss simulation and a first comparison work; the baseline sweep, router and integration have not started.
+Loss simulation and the three-rate baseline sweep are complete. The per-shot export, router reporting harness, and two held-out Relay-BP routing replays are on main.
 
 **Done**
 
@@ -69,7 +69,11 @@ Loss simulation and a first comparison work; the baseline sweep, router and inte
 
 Loss flags cut BP-OSD's error rate about 4×. Under 1% loss plain BP converges on only 27% of shots, so the router's savings depend strongly on the loss rate.
 
-**Running now:** loss comparison at p = 0.004, 0.5% loss, 2000 shots on Gonzalo's Mac.
+**Sena’s completed work**
+
+- Added the per-shot NPZ export with failure flags, decode times, and separate first-stage and fallback iteration counts. [Evaluator](../challenge-1-ml-decoder-kit/evaluate.py)
+- Built and smoke-tested the cached router comparison harness. It aligns shot IDs and produces a CSV and latency-versus-error plot. [Report harness](../challenge-1-ml-decoder-kit/router_report.py)
+- Ran the 200-pair pilot and 2,000-pair held-out scale-up at p = 0.005 without loss. At a matched 20% fallback rate, the learned router was 7.8% faster on mean replay latency than the simple rule, with 152 vs. 144 failed pairs. Relay-BP-5 alone had fewer failures and lower latency than either router. [Replay results](../challenge-1-ml-decoder-kit/results/README.md#larger-held-out-relay-bp-1-routing-replay)
 
 ## Task board
 
@@ -77,13 +81,13 @@ Each row is owned by one person; put your name in the Owner cell when you take i
 
 | # | Task | Owner | Machine | Due | Done when | Status |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Team GitHub repo with kit + `loss_circuit.py` + `evaluate.py`; per-shot results format (`.npz`: fail, seconds, iterations); README skeleton | Integration | laptop | 4:30 PM | Everyone can clone and run tests | |
+| 1 | Team GitHub repo with kit + `loss_circuit.py` + `evaluate.py`; per-shot results format (`.npz`: fail, seconds, iterations); README skeleton | Integration | laptop | 4:30 PM | Everyone can clone and run tests | Per-shot export done (Sena) |
 | 2 | No-loss baseline sweep: BP-OSD, relay-BP-5 (kit default), relay-BP-1 (`stop_nconv=1`) at p = 0.003 / 0.004 / 0.005, 10k shots, per-shot results cached | Compute | 3060 box CPUs + BlueQubit | start now, done ~10 PM | p = 0.004 matches the kit README table within error | Done |
 | 3 | Herald → error-column map + per-shot prior reweighting (fired ≈ 1/4, unfired 0) for BP-OSD (`update_channel_probs`) and relay-BP (rebuild per shot) | Sean (QEC lead) | laptop | 6 PM | Reweighted BP-OSD decodes a lossy shot | |
 | 4 | Loss sweep: p_loss = 0, 0.002, 0.005, 0.01 × {loss-unaware, flags as H rows, reweighted priors} | Sean → Compute | 3060 box / BlueQubit | start ~7 PM | Cached results + one plot | |
 | 5 | Stage-1 min-sum BP logging features at iterations 10/20/40/80 (unsatisfied checks, LLR sign flips, mean abs LLR, converged) + OSD-0 disagreement; 20k training shots at p = 0.005, seed 1 | Stage-1 BP | laptop | 10 PM | Features saved to `.npz` | |
-| 6 | Router: labels (not converged by 80, or logically wrong); logistic regression then boosted trees; compare to "converged" rule, OSD-0 threshold, random routing | Router | laptop | 4 AM | AUROC on a held-out seed for all | |
-| 7 | `HierarchicalDecoder.decode(syndrome)` plugging into `decoders.score`; end-to-end run with a dummy router; plot scripts | Integration | laptop | 10 PM | One results row + one plot | |
+| 6 | Router: labels (not converged by 80, or logically wrong); logistic regression then boosted trees; compare to "converged" rule, OSD-0 threshold, random routing | Router | laptop | 4 AM | AUROC on a held-out seed for all | Held-out Relay-BP routing replay done (Sena). Full task criteria remain open. |
+| 7 | `HierarchicalDecoder.decode(syndrome)` plugging into `decoders.score`; end-to-end run with a dummy router; plot scripts | Integration | laptop | 10 PM | One results row + one plot | Comparison harness and smoke-test plot done (Sena). Live integration remains open. |
 | 8 | Final timing: one machine, single-threaded, about 1–2k shots per point | Compute | 3060 box | after 8 AM | Mean + p99 table | |
 | 9 | Slides and talk: outline at 10 PM, fill after the 8 AM freeze, rehearse twice | Integration leads, all help | — | 1 PM Sun | Rehearsed | |
 | S | Stretch (after 4 AM only): learned relay-BP memory strengths via `explicit_gammas`; learned loss-prior network; bb72 code | whoever is ahead | 3060 GPU / BlueQubit GPU | — | — | |
