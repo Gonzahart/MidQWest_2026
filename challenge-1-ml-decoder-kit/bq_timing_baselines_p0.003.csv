@@ -1,0 +1,4 @@
+decoder,p,p_loss,seed,shot_pairs,fail_x,fail_z,failed_pairs,ler_per_cycle,mean_ms,p99_ms,fallback_rate,peak_rss_mib,cpu,platform,logical_cpus,workers,math_threads,python
+relay1+H,0.003,0.0,2,1000,3,1,4,0.0003339460107422143,17.330229791925376,196.1941800810016,0.0,124.1484375,INTEL(R) XEON(R) PLATINUM 8573C,Linux-6.8.0-1020-azure-x86_64-with-glibc2.36,20,1,1,3.11.13
+relay+H,0.003,0.0,2,1000,1,0,1,8.337155219761971e-05,88.34669393397053,701.4254650388096,0.0,118.1953125,INTEL(R) XEON(R) PLATINUM 8573C,Linux-6.8.0-1020-azure-x86_64-with-glibc2.36,20,1,1,3.11.13
+bp>relay+H,0.003,0.0,2,1000,0,0,0,0.0,64.61491160099104,624.0005224494232,0.4,121.96875,INTEL(R) XEON(R) PLATINUM 8573C,Linux-6.8.0-1020-azure-x86_64-with-glibc2.36,20,1,1,3.11.13
