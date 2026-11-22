@@ -8,6 +8,19 @@ the kit baselines (BP-OSD, relay-BP) in three ways: **(1) atom-loss flags as per
 router that decides when relay-BP-1's answer needs relay-BP-5**, and **(3) relay-BP on a consumer GPU**. Every
 comparison is paired on the same simulated shots; every ML test was fixed in advance and run once on fresh seeds.
 
+**Slides:** [Faster_more_accurate_decoding_of_the_Gross_code_v2.pdf](Faster_more_accurate_decoding_of_the_Gross_code_v2.pdf)
+
+## Approach in one paragraph
+
+Each shot's syndrome (936 parity checks per basis) is decoded by relay-BP. **Loss-aware priors:** when a data atom is lost,
+the hardware raises a herald flag; a lost atom leaves I/X/Y/Z with equal odds, so in one memory basis the flagged error
+column has probability exactly 1/2, and unflagged loss columns ~0. We set those priors per shot on the unchanged check
+matrix (rebuild ~5 ms). **Learned routing (the ML part):** relay-BP-1 decodes every shot; a gradient-boosted model
+(monotone-constrained) reads 7 features of that decode (+3 flag features with loss) and predicts the net benefit of
+escalating (relay-BP-5 fixes − breaks); shots above a threshold fixed on a separate calibration seed are re-decoded with
+relay-BP-5. A 6-bit truth-table version of the router fits one FPGA lookup table. **GPU:** the same relay-BP-5 runs
+through NVIDIA CUDA-Q QEC on an RTX 3060 (fp32, batch 1).
+
 ## Results at a glance
 
 A trial (X/Z pair) fails if either memory fails; LER = per-cycle logical error rate `1-(1-P)^(1/12)`.
@@ -37,9 +50,23 @@ Limits: loss model = prompt, perfect-location heralds on data qubits at cycle st
 router p99 is worse than relay-BP-5 alone (escalated shots pay both decoders). Closest prior work: Murri,
 arXiv 2610.38283 (loss-aware relay-BP on the Gross code for delayed, correlated loss; no latency reported).
 
+## Quick start
+
+```bash
+git clone https://github.com/Gonzahart/MidQWest_2026
+cd MidQWest_2026/challenge-1-ml-decoder-kit
+python -m venv .venv && source .venv/bin/activate          # Python 3.11 or 3.12
+pip install -r requirements.txt scikit-learn pytest
+# relay-bp builds from source (needs Rust, rustup.rs); on Linux x86-64 + Python 3.11 use the prebuilt wheel:
+#   pip install wheels/relay_bp-0.2.2-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+python -m pytest test_kit.py                                # kit sanity tests
+python sweep.py run --decoder relay5 --p 0.004 --p-loss 0.01 --loss-mode reweight --shots 200 --seed 99 --workers 4
+python sweep.py summarize results/relay5_p0.004_l0.01_reweight_s99_n200_shard0of1.npz
+```
+
 ## Reproduce the headline results
 
-From `challenge-1-ml-decoder-kit/` (quick-start environment below; `scikit-learn` needed for the routers).
+From `challenge-1-ml-decoder-kit/` with the quick-start environment active.
 `sweep.py run` writes per-shot `.npz` files (failures, times, iterations, features); `sweep.py summarize` prints tables.
 
 ```bash
@@ -71,6 +98,7 @@ python econ_router.py --monotone \
 # Official single-worker latency (one machine, one thread, nothing else running)
 for p in 0.003 0.004 0.005; do for d in relay1 relay5 bposd; do
   OMP_NUM_THREADS=1 python sweep.py run --decoder $d --p $p --shots 1000 --seed 16 --workers 1 --out results/final_timing; done; done
+# (our committed run of this is in results/timing/final timing/)
 ```
 
 Seeds used (never tune on a test seed): 1/2 train · 4 thresholds · 5 herald control · 6 loss timing · 8 GPU check ·
@@ -93,19 +121,6 @@ Files from different machines or worker counts draw different shots: pair only m
 | `docs/context/` | Planning and research notes: track analysis, Infleqtion insights, challenge plan, decoder literature |
 | `docs/reference/` | Challenge README, Sean's handoff and research report, Fowler's surface code paper |
 | `prep/` | Friday-night prep: surface code threshold baseline with Stim + PyMatching |
-
-## Quick start
-
-```bash
-mkdir -p ~/midqwest && cd ~/midqwest
-uv venv --python 3.12 && source .venv/bin/activate
-git clone https://github.com/Gonzahart/MidQWest_2026
-cd MidQWest_2026/challenge-1-ml-decoder-kit
-uv pip install -r requirements.txt pytest torch scikit-learn matplotlib   # relay-bp needs Rust: rustup.rs
-python -m pytest test_kit.py
-python baseline.py --p 0.004 --shots 500
-python evaluate.py --p 0.004 --p-loss 0.005 --shots 200
-```
 
 ## Reproduce the frozen truth-table routers
 
