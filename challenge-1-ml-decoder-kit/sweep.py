@@ -82,11 +82,16 @@ class Reweighted:
         return self.decoder.decode(syndrome_full[self.check_rows])
 
 
-def solution_features(error, priors, success):
-    """(converged, Hamming weight, log-likelihood of the correction under the priors)."""
+FEATURE_NAMES = ("converged", "weight", "loglik", "syndrome_weight", "posterior_abs_mean", "posterior_abs_p10")
+
+
+def relay_features(result, error, priors, syndrome):
+    """Router features of one relay-BP decode (the last three match relay_router_pilot.py)."""
     on = error.astype(bool)
-    llr = np.log(priors[on] / (1 - priors[on])).sum()
-    return float(success), float(on.sum()), float(llr + np.log1p(-priors).sum())
+    loglik = np.log(priors[on] / (1 - priors[on])).sum() + np.log1p(-priors).sum()
+    confidence = np.nan_to_num(np.abs(np.asarray(result.posterior_ratios)), nan=0).clip(0, 100)
+    return (float(result.success), float(on.sum()), float(loglik), float(syndrome.sum()),
+            float(confidence.mean()), float(np.percentile(confidence, 10)))
 
 
 def decode_one(decoder, name, syndrome):
@@ -116,7 +121,7 @@ def work(job):
     fail = np.zeros((len(idx), 2), bool)
     secs = np.zeros((len(idx), 2))
     iters = np.zeros((len(idx), 2), np.int32)
-    feats = np.full((len(idx), 2, 3), np.nan)   # converged, solution weight, log-likelihood
+    feats = np.full((len(idx), 2, len(FEATURE_NAMES)), np.nan)
     for b, (H, L, priors, det, obs, is_herald) in enumerate(problems(args)):
         reweight = args.loss_mode == "reweight" and args.p_loss > 0
         if reweight:
@@ -129,12 +134,15 @@ def work(job):
             if reweight:
                 error, iters[j, b] = np.asarray(rw.decode(det[k]), np.uint8), -1
             else:
-                error, iters[j, b] = decode_one(decoder, args.decoder, det[k])
                 if args.decoder.startswith("relay"):
-                    satisfied = not ((H @ error) % 2 != det[k]).any()
-                    feats[j, b] = solution_features(error, priors, satisfied)
+                    result = decoder.decode_detailed(det[k])
+                    error, iters[j, b] = np.asarray(result.decoding, np.uint8), int(result.iterations)
+                else:
+                    error, iters[j, b] = decode_one(decoder, args.decoder, det[k])
             secs[j, b] = time.perf_counter() - t
             fail[j, b] = ((L @ error) % 2 != obs[k]).any()
+            if args.decoder.startswith("relay") and not reweight:
+                feats[j, b] = relay_features(result, error, priors, det[k])
     return idx, fail, secs, iters, feats
 
 
@@ -152,7 +160,7 @@ def run(args):
     np.savez_compressed(path, decoder=args.decoder, p=args.p, p_loss=args.p_loss, loss_mode=args.loss_mode,
                         seed=args.seed, shots=args.shots, shard=args.shard, nshards=args.nshards,
                         shot_idx=idx, fail=fail, seconds=secs, iterations=iters, features=feats,
-                        feature_names=np.asarray(["converged", "weight", "loglik"]), host=os.uname().nodename,
+                        feature_names=np.asarray(FEATURE_NAMES), host=os.uname().nodename,
                         workers=args.workers, cycles=CYCLES, basis=np.asarray(["X", "Z"]),
                         stim_version=stim.__version__)
     rate, err = per_cycle_rate(fail.any(axis=1), CYCLES)

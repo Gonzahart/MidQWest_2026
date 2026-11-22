@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 
 # relay-bp normally builds from source with Rust + a C compiler. BlueQubit notebooks have no C
 # compiler, so wheels/ holds a prebuilt Linux x86_64 build for Python 3.11 (manylinux2014).
-if ! python3 -m pip install -q wheels/relay_bp-0.2.2-cp311-*.whl 2>/dev/null; then
+if ! python3 -m pip install -q wheels/relay_bp-0.2.2-cp311-*.whl; then
   echo "== no matching prebuilt relay-bp wheel; building from source (needs Rust and cc)"
   if ! command -v cargo >/dev/null; then
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y

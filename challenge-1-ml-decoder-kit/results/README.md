@@ -61,3 +61,15 @@ The pilot gives no evidence of an accuracy gain over the simple rule. The mean
 latency difference needs a larger held-out sample and live timing.
 
 [Summary CSV](relay_router_pilot_p005.csv) · [Pilot cache](relay_router_pilot_p005.npz)
+
+## Loss prior fix check (Gonzalo's Mac, Sat 6:05 PM)
+Same shots as above (seed 1, 2000 shots, p = 0.004, p_loss = 0.005) with the corrected prior P(column | loss) = 1/2
+(was 1/4). Files kept locally in `results_v2/`.
+
+| Decoder | Prior 1/4 | Prior 1/2 (fixed) |
+|---|---|---|
+| BP-OSD, reweighted | 5.4e-3 ± 0.5e-3 | 5.5e-3 ± 0.5e-3 |
+| relay-BP-5, reweighted | 1.0e-3 ± 0.2e-3 | 1.1e-3 ± 0.2e-3 |
+
+The fix changes nothing measurable: what matters is marking where loss happened (unfired heralds -> ~0,
+fired -> large prior), not the exact value.
