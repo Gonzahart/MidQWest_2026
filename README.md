@@ -26,6 +26,13 @@ Full tables, caveats and file lists: [`challenge-1-ml-decoder-kit/results/README
 | GPU relay-BP-5 (RTX 3060, fp32, batch 1, same shots) | mean / p99 25 / 315 ms vs CPU 206 / 3,287 ms at p = 0.004; 87 / 486 vs 905 / 4,698 ms at p = 0.005; accuracy within noise | `results/Sean GPU-relay/` |
 | Official single-worker CPU latency (seed 16) | BP-OSD, relay-BP-1, relay-BP-5 at all three p | `results/timing/final timing/` |
 
+**Comparison plots (deliverable):**
+[loss flags vs baseline, LER at p = 0.003/0.004/0.005](challenge-1-ml-decoder-kit/results/figures/fig_loss.png) ·
+[router vs simple rule, random choice and relay-BP baselines](challenge-1-ml-decoder-kit/results/figures/fig_router.png) ·
+[GPU vs CPU relay-BP-5 worst-case latency](challenge-1-ml-decoder-kit/results/figures/fig_gpu.png) ·
+[loss sweep, relay-BP-5](challenge-1-ml-decoder-kit/results/loss_sweep_relay5.png) ·
+[loss sweep, BP-OSD](challenge-1-ml-decoder-kit/results/loss_sweep_bposd.png)
+
 Limits: loss model = prompt, perfect-location heralds on data qubits at cycle start; ML router helps only at p = 0.005;
 router p99 is worse than relay-BP-5 alone (escalated shots pay both decoders). Closest prior work: Murri,
 arXiv 2610.38283 (loss-aware relay-BP on the Gross code for delayed, correlated loss; no latency reported).
