@@ -1,0 +1,669 @@
+{
+ "name": "six-bit truth-table router, GPU-priced strong pass (derived from the frozen table), frozen",
+ "frozen_at": "2026-11-22T05:12-06:00, before any seed-14 data was on main",
+ "source": "RelayLab-app.zip data.js (built by build_data.py from commit 36d51f6): cuts and cells from the relay_router_scaleup_p005 pilot (model frequencies seeds 41/42, strong-pass costs seeds 2/3)",
+ "decision_rule": "escalate cell k iff n_k >= 12 and rescue_k - regress_k > price * cost_ms_k / 1000",
+ "price_failures_avoided_per_second": 0.035,
+ "bits_msb_first": [
+  "nonconverged (relay-BP-1 converged == 0)",
+  "syndrome_weight > cut[0]",
+  "iterations > cut[1]",
+  "iterations > cut[2]",
+  "posterior_abs_mean < cut[3]",
+  "posterior_abs_p10 < cut[4]"
+ ],
+ "cut": [
+  158.0,
+  39.0,
+  1633.8999999999974,
+  85.08262318136458,
+  48.54028414455042
+ ],
+ "escalate": [
+  false,
+  true,
+  true,
+  true,
+  false,
+  false,
+  false,
+  false,
+  true,
+  true,
+  false,
+  true,
+  false,
+  false,
+  false,
+  false,
+  true,
+  false,
+  false,
+  true,
+  false,
+  false,
+  false,
+  false,
+  true,
+  false,
+  true,
+  true,
+  false,
+  false,
+  false,
+  true,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true,
+  false,
+  false,
+  true,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  true,
+  false,
+  false,
+  true
+ ],
+ "cells": [
+  {
+   "key": 0,
+   "bits": "000000",
+   "n": 1302,
+   "rescue": 0.00028366111951588503,
+   "regress": 0.00015885022692889564,
+   "cost": 54.3146835487854,
+   "escalate": false
+  },
+  {
+   "key": 1,
+   "bits": "000001",
+   "n": 51,
+   "rescue": 0.00528169014084507,
+   "regress": 0.00295774647887324,
+   "cost": 212.1079731668304,
+   "escalate": true
+  },
+  {
+   "key": 2,
+   "bits": "000010",
+   "n": 24,
+   "rescue": 0.008522727272727272,
+   "regress": 0.004772727272727273,
+   "cost": 277.7891778125107,
+   "escalate": true
+  },
+  {
+   "key": 3,
+   "bits": "000011",
+   "n": 305,
+   "rescue": 0.001153846153846154,
+   "regress": 0.0006461538461538462,
+   "cost": 61.49008375751182,
+   "escalate": true
+  },
+  {
+   "key": 4,
+   "bits": "000100",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 5,
+   "bits": "000101",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 6,
+   "bits": "000110",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 7,
+   "bits": "000111",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 8,
+   "bits": "001000",
+   "n": 816,
+   "rescue": 0.010017942583732058,
+   "regress": 0.002643540669856459,
+   "cost": 330.16031797592325,
+   "escalate": true
+  },
+  {
+   "key": 9,
+   "bits": "001001",
+   "n": 13,
+   "rescue": 0.041666666666666664,
+   "regress": 0.006363636363636364,
+   "cost": 405.49178589551593,
+   "escalate": true
+  },
+  {
+   "key": 10,
+   "bits": "001010",
+   "n": 38,
+   "rescue": 0.00646551724137931,
+   "regress": 0.02086206896551724,
+   "cost": 601.721556770683,
+   "escalate": false
+  },
+  {
+   "key": 11,
+   "bits": "001011",
+   "n": 259,
+   "rescue": 0.0264336917562724,
+   "regress": 0.007921146953405019,
+   "cost": 452.7153895572715,
+   "escalate": true
+  },
+  {
+   "key": 12,
+   "bits": "001100",
+   "n": 107,
+   "rescue": 0.05019685039370079,
+   "regress": 0.09614173228346458,
+   "cost": 1729.1444726562947,
+   "escalate": false
+  },
+  {
+   "key": 13,
+   "bits": "001101",
+   "n": 2,
+   "rescue": 0.017045454545454544,
+   "regress": 0.009545454545454546,
+   "cost": 552.3406095378,
+   "escalate": false
+  },
+  {
+   "key": 14,
+   "bits": "001110",
+   "n": 6,
+   "rescue": 0.014423076923076924,
+   "regress": 0.046538461538461535,
+   "cost": 886.3374699246924,
+   "escalate": false
+  },
+  {
+   "key": 15,
+   "bits": "001111",
+   "n": 55,
+   "rescue": 0.045,
+   "regress": 0.06946666666666666,
+   "cost": 1926.677321140119,
+   "escalate": false
+  },
+  {
+   "key": 16,
+   "bits": "010000",
+   "n": 252,
+   "rescue": 0.0013786764705882354,
+   "regress": 0.0007720588235294118,
+   "cost": 115.33182222977027,
+   "escalate": true
+  },
+  {
+   "key": 17,
+   "bits": "010001",
+   "n": 11,
+   "rescue": 0.012096774193548387,
+   "regress": 0.006774193548387097,
+   "cost": 309.9991664135427,
+   "escalate": false
+  },
+  {
+   "key": 18,
+   "bits": "010010",
+   "n": 2,
+   "rescue": 0.017045454545454544,
+   "regress": 0.009545454545454546,
+   "cost": 390.51025507896986,
+   "escalate": false
+  },
+  {
+   "key": 19,
+   "bits": "010011",
+   "n": 68,
+   "rescue": 0.004261363636363636,
+   "regress": 0.0023863636363636366,
+   "cost": 180.726893622537,
+   "escalate": true
+  },
+  {
+   "key": 20,
+   "bits": "010100",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 21,
+   "bits": "010101",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 22,
+   "bits": "010110",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 23,
+   "bits": "010111",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 24,
+   "bits": "011000",
+   "n": 327,
+   "rescue": 0.021253602305475506,
+   "regress": 0.0092507204610951,
+   "cost": 502.27527998417884,
+   "escalate": true
+  },
+  {
+   "key": 25,
+   "bits": "011001",
+   "n": 6,
+   "rescue": 0.014423076923076924,
+   "regress": 0.008076923076923077,
+   "cost": 477.8211704146346,
+   "escalate": false
+  },
+  {
+   "key": 26,
+   "bits": "011010",
+   "n": 13,
+   "rescue": 0.011363636363636364,
+   "regress": 0.006363636363636364,
+   "cost": 560.7272211063149,
+   "escalate": true
+  },
+  {
+   "key": 27,
+   "bits": "011011",
+   "n": 113,
+   "rescue": 0.040413533834586464,
+   "regress": 0.031654135338345865,
+   "cost": 804.0616466487289,
+   "escalate": true
+  },
+  {
+   "key": 28,
+   "bits": "011100",
+   "n": 79,
+   "rescue": 0.07449494949494949,
+   "regress": 0.11323232323232324,
+   "cost": 1946.7481337255756,
+   "escalate": false
+  },
+  {
+   "key": 29,
+   "bits": "011101",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 548.6834341375894,
+   "escalate": false
+  },
+  {
+   "key": 30,
+   "bits": "011110",
+   "n": 4,
+   "rescue": 0.015625,
+   "regress": 0.00875,
+   "cost": 658.4954825366069,
+   "escalate": false
+  },
+  {
+   "key": 31,
+   "bits": "011111",
+   "n": 49,
+   "rescue": 0.07789855072463768,
+   "regress": 0.017536231884057972,
+   "cost": 1521.9485079789413,
+   "escalate": true
+  },
+  {
+   "key": 32,
+   "bits": "100000",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 33,
+   "bits": "100001",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 34,
+   "bits": "100010",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 35,
+   "bits": "100011",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 36,
+   "bits": "100100",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 37,
+   "bits": "100101",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 38,
+   "bits": "100110",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 39,
+   "bits": "100111",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 40,
+   "bits": "101000",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 41,
+   "bits": "101001",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 42,
+   "bits": "101010",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 43,
+   "bits": "101011",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 44,
+   "bits": "101100",
+   "n": 14,
+   "rescue": 0.09926470588235294,
+   "regress": 0.0061764705882352946,
+   "cost": 1227.3216741399826,
+   "escalate": true
+  },
+  {
+   "key": 45,
+   "bits": "101101",
+   "n": 2,
+   "rescue": 0.017045454545454544,
+   "regress": 0.009545454545454546,
+   "cost": 731.1593859449732,
+   "escalate": false
+  },
+  {
+   "key": 46,
+   "bits": "101110",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 47,
+   "bits": "101111",
+   "n": 23,
+   "rescue": 0.125,
+   "regress": 0.004883720930232559,
+   "cost": 2175.0603470548945,
+   "escalate": true
+  },
+  {
+   "key": 48,
+   "bits": "110000",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 49,
+   "bits": "110001",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 50,
+   "bits": "110010",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 51,
+   "bits": "110011",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 52,
+   "bits": "110100",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 53,
+   "bits": "110101",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 54,
+   "bits": "110110",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 55,
+   "bits": "110111",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 56,
+   "bits": "111000",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 57,
+   "bits": "111001",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 58,
+   "bits": "111010",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 59,
+   "bits": "111011",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 60,
+   "bits": "111100",
+   "n": 16,
+   "rescue": 0.2326388888888889,
+   "regress": 0.005833333333333334,
+   "cost": 1244.8427512171286,
+   "escalate": true
+  },
+  {
+   "key": 61,
+   "bits": "111101",
+   "n": 2,
+   "rescue": 0.0625,
+   "regress": 0.009545454545454546,
+   "cost": 727.6576739020079,
+   "escalate": false
+  },
+  {
+   "key": 62,
+   "bits": "111110",
+   "n": 0,
+   "rescue": 0.01875,
+   "regress": 0.0105,
+   "cost": 444.7822370919894,
+   "escalate": false
+  },
+  {
+   "key": 63,
+   "bits": "111111",
+   "n": 41,
+   "rescue": 0.15368852459016394,
+   "regress": 0.0034426229508196723,
+   "cost": 2456.5226058519715,
+   "escalate": true
+  }
+ ],
+ "derivation": "Same cells, cut points and price (0.035) as truth_table_router_frozen.json; the strong-pass cost of every cell divided by 10, the measured CPU/GPU fp32 relay-BP-5 time ratio (p = 0.005, seed 8, 1,000 pairs, RTX 3060: 10.4x on the mean, 12.5x on the slowest 10%). No parameter was fitted to seed 10, 14 or 16.",
+ "gpu_cost_ratio": 10,
+ "accuracy_caveat": "Replay scoring uses recorded CPU relay-BP-5 outcomes for escalated shots, assuming the GPU decoder matches CPU relay-BP-5 accuracy (seed 8: 9 vs 8 failed pairs at p = 0.004, 102 vs 93 at 0.005, not significant)."
+}
