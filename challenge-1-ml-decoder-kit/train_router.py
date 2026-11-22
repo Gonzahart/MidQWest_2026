@@ -169,6 +169,7 @@ def main():
         rows.append(dict(policy=name, budget="", auroc="", **row))
 
     rng = np.random.default_rng(args.random_seed)
+    matched_rng = np.random.default_rng(args.random_seed)
     scorers = {n: m.score for n, m in models.items()} | {"simple rule": rule}
     for name, scorer in scorers.items():
         s_tr, s_te = scorer(x_tr), scorer(x_te)
@@ -177,6 +178,10 @@ def main():
             thr = np.quantile(s_tr, 1 - budget)          # threshold fixed on training scores
             route = (s_te > thr).reshape(shape)
             rows.append(dict(policy=name, budget=budget, auroc=round(auc, 4), **replay(route, r1, r5, cycles)))
+            # Shuffle each basis separately to preserve its realized escalation count.
+            matched = np.column_stack([matched_rng.permutation(column) for column in route.T])
+            rows.append(dict(policy=f"random matched to {name}", budget=budget, auroc="",
+                             **replay(matched, r1, r5, cycles)))
             if name in models:
                 np.savez_compressed(f"{args.out}_decisions_{name}_{budget}.npz", shot=te_idx, basis=np.asarray(["X", "Z"]),
                                     route=route, **{k: te_meta[k] for k in META if k in te_meta})
