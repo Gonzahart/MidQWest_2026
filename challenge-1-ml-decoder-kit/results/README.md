@@ -349,3 +349,14 @@ Context (seed 26, 1% loss, flags used): relay-BP-1 1,252 failed pairs @ 1,529 ms
 Reading: predicting the *net* benefit of escalation (including the shots relay-BP-5 would break) beats the best simple rule
 at p = 0.005, with and without atom loss, on fresh data with everything fixed in advance. At p ≤ 0.004 there are too few
 rescues (40 in the loss training set at p = 0.004) for the model to improve on "escalate what didn't converge".
+
+## Second fresh-seed check: seed 32 (Sean's data, Sun ~1 PM)
+Same frozen net-benefit model (`econ_router.py --monotone`, train seed 2, thresholds seed 4), scored once on Sean's seed-32
+relay-BP-1 / relay-BP-5 caches (`results/fresh_s32/`, 10k pairs, 20 workers on PCHome; compare within a row).
+
+| p | ML failed pairs | Simple rule, same mean time | Saved by ML [95%] | Random decoder choice, same time | relay-BP-1 / relay-BP-5 alone |
+|---|---:|---:|---:|---:|---|
+| 0.005 | 846 @ 1,426 ms | 888 | **+42 [15, 68]** | ~864 | 970 @ 716 ms / 808 @ 1,792 ms |
+| 0.004 | 111 @ 339 ms | 107 | −4 [−10, 1], tie | ~111 | 141 @ 113 ms / 104 @ 393 ms |
+
+Replicates seed 14: a clear win over the simple rule at p = 0.005, a tie at p = 0.004.

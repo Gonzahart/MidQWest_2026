@@ -1,3 +1,5 @@
+> **SNAPSHOT NOTE (Sun 1 PM):** this guide is the Saturday-night working snapshot. For final results and reproduction commands see the [root README](../README.md) and [`challenge-1-ml-decoder-kit/results/README.md`](../challenge-1-ml-decoder-kit/results/README.md).
+
 # MidQWest 2026 – Team Guide (Infleqtion Challenge 1)
 
 Snapshot of the working guide from Nov 21, 2026, 4:20 PM.
