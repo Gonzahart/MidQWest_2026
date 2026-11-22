@@ -327,3 +327,25 @@ seeded per shot). LER per cycle (basis failures X / Z in brackets). Accuracy onl
 - False flags barely matter (20% extra false flags: 3.2x instead of 3.4x).
 - Missed flags hurt more but degrade gracefully: with 20% of losses unreported the decoder still has 2.2x fewer failures.
 - Hedging for missed flags by raising every unfired column's prior made it worse: trusting the flags is the better rule.
+
+## Pre-registered fresh-seed test of the net-benefit router (seed 14 / seed 26, Sun ~11:30 AM)
+Fixed before the data existed (`run_overnight.sh`, `econ_router.py --monotone`): rule-constrained boosted model of net benefit
+(+1 rescue, −1 regression) trained on seed 2 (no loss) or seed 22 (1% loss), thresholds from seed 4 / seed 24, tested once on
+seed 14 / seed 26. **Primary comparison: 10% budget vs the simple rule (unconverged first, then most iterations) at the same
+measured mean time, paired bootstrap over X/Z pairs, 95% interval.** Positive = ML has fewer failed pairs. BlueQubit,
+20 workers: compare within a row. Full tables in `results/overnight/`.
+
+| Setting | p | ML failed pairs | Simple rule, same mean time | Saved by ML [95%] | Verdict |
+|---|---|---:|---:|---:|---|
+| no loss, seed 14 (10k pairs) | 0.005 | 841 | 885 | **+44 [17, 72]** | **win** (also +37 at 5%, +38 at 20%) |
+| | 0.004 | 109 | 109 | 0 [−8, 8] | tie |
+| | 0.003 (50k pairs) | 42 | 41 | −1 [−3, 0] | tie (ML worse at 1–2% budgets: −9, −13) |
+| 1% loss, flags used, seed 26 (10k) | 0.005 | 1,210 | 1,240 | **+30 [12, 48]** | **win** (also +18 at 5%) |
+| | 0.004 | 155 | 162 | +7 [−3, 17] | tie (+15 [3, 26] at 5%; worse above 20%) |
+
+Context (seed 26, 1% loss, flags used): relay-BP-1 1,252 failed pairs @ 1,529 ms, relay-BP-5 1,090 @ 3,421 ms at p = 0.005;
+193 @ 234 ms and 136 @ 751 ms at p = 0.004. p99 is similar for ML and the simple rule at equal mean time.
+
+Reading: predicting the *net* benefit of escalation (including the shots relay-BP-5 would break) beats the best simple rule
+at p = 0.005, with and without atom loss, on fresh data with everything fixed in advance. At p ≤ 0.004 there are too few
+rescues (40 in the loss training set at p = 0.004) for the model to improve on "escalate what didn't converge".

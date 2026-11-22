@@ -1,0 +1,47 @@
+train: 12000 basis shots, rescues 137, regressions 45 (host 6cde1c04606b); test host 6cde1c04606b
+
+MATCHED COMPARISON (benefit model vs simple rule at equal measured mean time; paired bootstrap 95%)
+budget 0.01: ML 1251 failed @ 1681 ms (esc 0.010, p99 15480) | simple 1252 @ 1676 ms (p99 21475) | saved 1 [-5, 7]
+budget 0.02: ML 1250 failed @ 1810 ms (esc 0.018, p99 20142) | simple 1252 @ 1812 ms (p99 21779) | saved 2 [-7, 11]
+budget 0.05: ML 1234 failed @ 2268 ms (esc 0.050, p99 21829) | simple 1252 @ 2263 ms (p99 22234) | saved 18 [5, 32]
+budget 0.10: ML 1210 failed @ 2843 ms (esc 0.099, p99 22086) | simple 1240 @ 2843 ms (p99 22376) | saved 30 [12, 48]  <== PRIMARY
+budget 0.20: ML 1163 failed @ 3897 ms (esc 0.200, p99 25324) | simple 1174 @ 3897 ms (p99 26354) | saved 11 [-4, 28]
+budget 0.30: ML 1114 failed @ 4369 ms (esc 0.301, p99 26971) | simple 1119 @ 4368 ms (p99 27060) | saved 5 [-6, 16]
+budget 0.50: ML 1099 failed @ 4590 ms (esc 0.497, p99 26971) | simple 1098 @ 4590 ms (p99 27060) | saved -1 [-7, 5]
+
+policy                         target    esc  failed  mean ms   p99 ms  random@same mean
+relay-BP-1 alone                       0.000  1252.0   1529.2    11567            1252.0
+relay-BP-5 alone                       1.000  1090.0   3421.0    17724            1090.0
+economic (benefit / cost)        0.01  0.008  1251.0   1556.2    11618            1249.7
+economic (benefit / cost)        0.02  0.018  1250.0   1578.9    11650            1247.8
+economic (benefit / cost)        0.05  0.048  1244.0   1622.5    11733            1244.1
+economic (benefit / cost)         0.1  0.101  1238.0   1678.0    11774            1239.4
+economic (benefit / cost)         0.2  0.202  1231.0   1781.5    12127            1230.5
+economic (benefit / cost)         0.3  0.303  1219.0   1887.3    12506            1221.4
+economic (benefit / cost)         0.5  0.509  1195.0   2200.3    13413            1194.3
+benefit only (constant cost)     0.01  0.010  1251.0   1678.7    15470            1239.3
+benefit only (constant cost)     0.02  0.018  1250.0   1809.6    20142            1228.1
+benefit only (constant cost)     0.05  0.050  1234.0   2268.0    21829            1188.4
+benefit only (constant cost)      0.1  0.099  1210.0   2842.6    22086            1139.5
+benefit only (constant cost)      0.2  0.200  1163.0   3897.3    25324            1090.0
+benefit only (constant cost)      0.3  0.301  1115.0   4369.6    26971            1090.0
+benefit only (constant cost)      0.5  0.502  1099.0   4594.2    26992            1090.0
+simple rule                      0.01  0.010  1252.0   1735.2    21674            1234.5
+simple rule                      0.02  0.020  1252.0   1955.3    21951            1215.5
+simple rule                      0.05  0.049  1247.0   2556.2    22356            1164.9
+simple rule                       0.1  0.100  1215.0   3396.4    22984            1092.1
+simple rule                       0.2  0.200  1154.0   4135.1    26863            1090.0
+simple rule                       0.3  0.301  1111.0   4451.0    27060            1090.0
+simple rule                       0.5  0.502  1090.0   4754.5    27081            1090.0
+random decoder choice             0.0  0.000  1252.0   1529.2    11567            1252.0
+random decoder choice             0.1  0.100  1235.9   1719.2    12160            1235.9
+random decoder choice             0.2  0.200  1219.6   1908.6    12731            1219.6
+random decoder choice             0.3  0.300  1203.2   2097.2    13483            1203.2
+random decoder choice             0.4  0.400  1186.8   2286.2    14174            1186.8
+random decoder choice             0.5  0.500  1171.2   2474.8    14853            1171.2
+random decoder choice             0.6  0.600  1156.4   2664.4    15481            1156.4
+random decoder choice             0.7  0.700  1138.5   2853.5    16102            1138.5
+random decoder choice             0.8  0.800  1123.0   3043.1    16717            1123.0
+random decoder choice             0.9  0.900  1106.2   3231.9    17104            1106.2
+random decoder choice             1.0  1.000  1090.0   3421.0    17724            1090.0
+wrote results/overnight/loss_router_s26_p0.005.csv

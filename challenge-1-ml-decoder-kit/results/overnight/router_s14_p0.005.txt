@@ -1,0 +1,47 @@
+train: 20000 basis shots, rescues 383, regressions 202 (host 786b3e1eb7a4); test host 6cde1c04606b
+
+MATCHED COMPARISON (benefit model vs simple rule at equal measured mean time; paired bootstrap 95%)
+budget 0.01: ML 892 failed @ 1209 ms (esc 0.011, p99 18953) | simple 893 @ 1212 ms (p99 18929) | saved 1 [-13, 15]
+budget 0.02: ML 849 failed @ 1381 ms (esc 0.021, p99 19170) | simple 855 @ 1377 ms (p99 19125) | saved 6 [-7, 19]
+budget 0.05: ML 835 failed @ 1727 ms (esc 0.052, p99 19254) | simple 872 @ 1727 ms (p99 19268) | saved 37 [17, 57]
+budget 0.10: ML 841 failed @ 1992 ms (esc 0.102, p99 19276) | simple 885 @ 1990 ms (p99 19275) | saved 44 [17, 72]  <== PRIMARY
+budget 0.20: ML 839 failed @ 2501 ms (esc 0.203, p99 19750) | simple 877 @ 2500 ms (p99 19346) | saved 38 [9, 66]
+budget 0.30: ML 839 failed @ 2869 ms (esc 0.301, p99 20485) | simple 854 @ 2871 ms (p99 20671) | saved 15 [-7, 35]
+budget 0.50: ML 833 failed @ 3025 ms (esc 0.500, p99 20615) | simple 847 @ 3025 ms (p99 20870) | saved 14 [-5, 34]
+
+policy                         target    esc  failed  mean ms   p99 ms  random@same mean
+relay-BP-1 alone                       0.000   940.0   1005.4     9677             940.0
+relay-BP-5 alone                       1.000   842.0   2422.2    13058             842.0
+economic (benefit / cost)        0.01  0.010   940.0   1006.5     9677             939.9
+economic (benefit / cost)        0.02  0.019   940.0   1007.4     9677             939.9
+economic (benefit / cost)        0.05  0.051   940.0   1011.2     9677             939.6
+economic (benefit / cost)         0.1  0.104   937.0   1030.7     9759             938.3
+economic (benefit / cost)         0.2  0.205   930.0   1093.5    10300             934.2
+economic (benefit / cost)         0.3  0.304   918.0   1167.3    18657             929.2
+economic (benefit / cost)         0.5  0.502   863.0   1439.2    19161             910.3
+benefit only (constant cost)     0.01  0.011   893.0   1210.9    18959             926.1
+benefit only (constant cost)     0.02  0.021   847.0   1382.0    19172             914.2
+benefit only (constant cost)     0.05  0.051   834.0   1726.7    19254             890.1
+benefit only (constant cost)      0.1  0.101   841.0   1977.8    19282             872.6
+benefit only (constant cost)      0.2  0.198   840.0   2482.2    19628             842.0
+benefit only (constant cost)      0.3  0.299   841.0   2869.8    20485             842.0
+benefit only (constant cost)      0.5  0.503   834.0   3026.4    20615             842.0
+simple rule                      0.01  0.011   888.0   1197.4    18977             927.1
+simple rule                      0.02  0.021   847.0   1385.0    19172             914.0
+simple rule                      0.05  0.051   885.0   1881.7    19268             879.2
+simple rule                       0.1  0.101   885.0   2386.3    19326             844.4
+simple rule                       0.2  0.198   851.0   2838.7    20639             842.0
+simple rule                       0.3  0.296   847.0   3062.1    20870             842.0
+simple rule                       0.5  0.499   842.0   3292.0    20981             842.0
+random decoder choice             0.0  0.000   940.0   1005.4     9677             940.0
+random decoder choice             0.1  0.100   930.6   1147.6     9927             930.6
+random decoder choice             0.2  0.200   920.6   1288.3    10182             920.6
+random decoder choice             0.3  0.300   910.8   1431.7    10468             910.8
+random decoder choice             0.4  0.400   901.1   1571.4    10795             901.1
+random decoder choice             0.5  0.500   891.1   1713.5    11107             891.1
+random decoder choice             0.6  0.600   881.0   1855.2    11448             881.0
+random decoder choice             0.7  0.700   871.3   1997.0    11798             871.3
+random decoder choice             0.8  0.800   861.8   2138.9    12206             861.8
+random decoder choice             0.9  0.900   851.3   2280.4    12658             851.3
+random decoder choice             1.0  1.000   842.0   2422.2    13058             842.0
+wrote results/overnight/router_s14_p0.005.csv

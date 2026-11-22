@@ -1,0 +1,33 @@
+=== 1. net-benefit router, fresh seed 14 (Sun Nov 22 17:16:07 UTC 2026)
+p=0.005 done
+MATCHED COMPARISON (benefit model vs simple rule at equal measured mean time; paired bootstrap 95%)
+budget 0.01: ML 892 failed @ 1209 ms (esc 0.011, p99 18953) | simple 893 @ 1212 ms (p99 18929) | saved 1 [-13, 15]
+budget 0.02: ML 849 failed @ 1381 ms (esc 0.021, p99 19170) | simple 855 @ 1377 ms (p99 19125) | saved 6 [-7, 19]
+budget 0.05: ML 835 failed @ 1727 ms (esc 0.052, p99 19254) | simple 872 @ 1727 ms (p99 19268) | saved 37 [17, 57]
+budget 0.10: ML 841 failed @ 1992 ms (esc 0.102, p99 19276) | simple 885 @ 1990 ms (p99 19275) | saved 44 [17, 72]  <== PRIMARY
+budget 0.20: ML 839 failed @ 2501 ms (esc 0.203, p99 19750) | simple 877 @ 2500 ms (p99 19346) | saved 38 [9, 66]
+budget 0.30: ML 839 failed @ 2869 ms (esc 0.301, p99 20485) | simple 854 @ 2871 ms (p99 20671) | saved 15 [-7, 35]
+budget 0.50: ML 833 failed @ 3025 ms (esc 0.500, p99 20615) | simple 847 @ 3025 ms (p99 20870) | saved 14 [-5, 34]
+
+p=0.004 done
+MATCHED COMPARISON (benefit model vs simple rule at equal measured mean time; paired bootstrap 95%)
+budget 0.01: ML 108 failed @ 253 ms (esc 0.009, p99 6222) | simple 125 @ 251 ms (p99 9757) | saved 17 [9, 26]
+budget 0.02: ML 116 failed @ 290 ms (esc 0.018, p99 9197) | simple 124 @ 289 ms (p99 11100) | saved 8 [-2, 19]
+budget 0.05: ML 114 failed @ 370 ms (esc 0.047, p99 10467) | simple 116 @ 370 ms (p99 11279) | saved 2 [-10, 14]
+budget 0.10: ML 109 failed @ 460 ms (esc 0.098, p99 11013) | simple 109 @ 460 ms (p99 11449) | saved 0 [-8, 8]  <== PRIMARY
+budget 0.20: ML 109 failed @ 482 ms (esc 0.199, p99 11256) | simple 105 @ 482 ms (p99 11449) | saved -4 [-11, 3]
+budget 0.30: ML 107 failed @ 501 ms (esc 0.298, p99 11256) | simple 107 @ 501 ms (p99 11535) | saved 0 [-8, 8]
+budget 0.50: ML 106 failed @ 541 ms (esc 0.495, p99 11295) | simple 104 @ 541 ms (p99 11535) | saved -2 [-10, 6]
+
+p=0.003 done
+MATCHED COMPARISON (benefit model vs simple rule at equal measured mean time; paired bootstrap 95%)
+budget 0.01: ML 57 failed @ 49 ms (esc 0.010, p99 571) | simple 48 @ 50 ms (p99 287) | saved -9 [-18, 0]
+budget 0.02: ML 54 failed @ 59 ms (esc 0.019, p99 824) | simple 41 @ 59 ms (p99 896) | saved -13 [-23, -4]
+budget 0.05: ML 42 failed @ 81 ms (esc 0.049, p99 1178) | simple 42 @ 81 ms (p99 1175) | saved 0 [0, 0]
+budget 0.10: ML 42 failed @ 86 ms (esc 0.098, p99 1181) | simple 41 @ 86 ms (p99 1186) | saved -1 [-3, 0]  <== PRIMARY
+budget 0.20: ML 42 failed @ 96 ms (esc 0.197, p99 1192) | simple 41 @ 96 ms (p99 1194) | saved -1 [-3, 0]
+budget 0.30: ML 43 failed @ 106 ms (esc 0.298, p99 1196) | simple 42 @ 106 ms (p99 1197) | saved -1 [-3, 0]
+budget 0.50: ML 43 failed @ 126 ms (esc 0.498, p99 1205) | simple 41 @ 126 ms (p99 1206) | saved -2 [-5, 0]
+
+=== 2. loss-aware router training/threshold data (Sun Nov 22 17:17:04 UTC 2026)
+=== 3. loss-aware router test, seed 26 (Sun Nov 22 17:17:04 UTC 2026)

@@ -1,0 +1,12 @@
+decoder               p p_loss mode     shots fail X fail Z LER/cycle       +-  mean ms   p99 ms
+relay1            0.004  0.010 reweight   6000     68     53  1.70e-03  1.5e-04    253.4     5776
+relay1            0.004  0.010 reweight  10000    103     84  1.56e-03  1.1e-04    259.4     5160
+relay1            0.004  0.010 reweight  10000     99     95  1.62e-03  1.2e-04    234.0     3851
+relay1            0.005  0.010 reweight   6000    397    404  1.15e-02  4.1e-04   1484.5    11108
+relay1            0.005  0.010 reweight  10000    660    664  1.13e-02  3.2e-04   1532.9    11494
+relay1            0.005  0.010 reweight  10000    626    662  1.11e-02  3.1e-04   1529.2    11567
+relay5            0.004  0.010 reweight   6000     52     41  1.30e-03  1.3e-04    767.4    10932
+relay5            0.004  0.010 reweight  10000     69     68  1.14e-03  9.8e-05    751.1    10719
+relay5            0.005  0.010 reweight   6000    356    353  1.01e-02  3.8e-04   3381.9    17797
+relay5            0.005  0.010 reweight  10000    542    577  9.57e-03  2.9e-04   3421.0    17724
+Timing is only comparable for files from the same machine (see the host field).

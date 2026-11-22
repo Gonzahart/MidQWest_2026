@@ -1,0 +1,48 @@
+nohup: ignoring input
+relay5_p0.004_l0.01_unaware_s12_n2000: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_unaware_s12_n2000_shard0of1.npz
+done in 184s: failures [50 53], per cycle 4.13e-03 +- 4.2e-04, mean 1467.5 ms
+relay5_p0.004_l0.01_reweight_s12_n2000: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_shard0of1.npz
+done in 110s: failures [15 15], per cycle 1.22e-03 +- 2.3e-04, mean 764.3 ms
+relay5_p0.004_l0.01_reweight_s12_n2000_prior0.2: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_prior0.2_shard0of1.npz
+done in 112s: failures [20 17], per cycle 1.51e-03 +- 2.5e-04, mean 843.3 ms
+relay5_p0.004_l0.01_reweight_s12_n2000_prior0.3: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_prior0.3_shard0of1.npz
+done in 109s: failures [22 15], per cycle 1.51e-03 +- 2.5e-04, mean 789.2 ms
+relay5_p0.004_l0.01_reweight_s12_n2000_prior0.4: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_prior0.4_shard0of1.npz
+done in 109s: failures [15 16], per cycle 1.26e-03 +- 2.3e-04, mean 779.4 ms
+relay5_p0.004_l0.01_reweight_s12_n2000_miss0.05: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_miss0.05_shard0of1.npz
+done in 115s: failures [17 17], per cycle 1.34e-03 +- 2.4e-04, mean 792.1 ms
+relay5_p0.004_l0.01_reweight_s12_n2000_miss0.2: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_miss0.2_shard0of1.npz
+done in 126s: failures [25 20], per cycle 1.85e-03 +- 2.8e-04, mean 945.5 ms
+relay5_p0.004_l0.01_reweight_s12_n2000_miss0.2_aware: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_miss0.2_aware_shard0of1.npz
+done in 155s: failures [28 31], per cycle 2.41e-03 +- 3.2e-04, mean 1226.4 ms
+relay5_p0.004_l0.01_reweight_s12_n2000_false0.05: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_false0.05_shard0of1.npz
+done in 110s: failures [16 14], per cycle 1.22e-03 +- 2.3e-04, mean 786.4 ms
+relay5_p0.004_l0.01_reweight_s12_n2000_false0.2: 2000 shots on 20 workers -> results/robust/relay5_p0.004_l0.01_reweight_s12_n2000_false0.2_shard0of1.npz
+done in 112s: failures [20 13], per cycle 1.30e-03 +- 2.3e-04, mean 832.5 ms
+decoder               p p_loss mode     shots fail X fail Z LER/cycle       +-  mean ms   p99 ms
+relay5            0.004  0.010 reweight   2000     15     15  1.22e-03  2.3e-04    764.3    10778
+relay5            0.004  0.010 unaware   2000     50     53  4.13e-03  4.2e-04   1467.5    10226
+relay5[false0.05]  0.004  0.010 reweight   2000     16     14  1.22e-03  2.3e-04    786.4    10620
+relay5[false0.2]  0.004  0.010 reweight   2000     20     13  1.30e-03  2.3e-04    832.5    10841
+relay5[miss0.05]  0.004  0.010 reweight   2000     17     17  1.34e-03  2.4e-04    792.1    10698
+relay5[miss0.2]   0.004  0.010 reweight   2000     25     20  1.85e-03  2.8e-04    945.5    10909
+relay5[miss0.2_aware]  0.004  0.010 reweight   2000     28     31  2.41e-03  3.2e-04   1226.4    11136
+relay5[prior0.2]  0.004  0.010 reweight   2000     20     17  1.51e-03  2.5e-04    843.3    10624
+relay5[prior0.3]  0.004  0.010 reweight   2000     22     15  1.51e-03  2.5e-04    789.2    10632
+relay5[prior0.4]  0.004  0.010 reweight   2000     15     16  1.26e-03  2.3e-04    779.4    10617
+Timing is only comparable for files from the same machine (see the host field).
+relay1_p0.005_l0.0_unaware_s14_n10000: 10000 shots on 20 workers -> results/relay1_p0.005_l0.0_unaware_s14_n10000_shard0of1.npz
+done in 580s: failures [485 483], per cycle 8.19e-03 +- 2.7e-04, mean 1005.4 ms
+relay5_p0.005_l0.0_unaware_s14_n10000: 10000 shots on 20 workers -> results/relay5_p0.005_l0.0_unaware_s14_n10000_shard0of1.npz
+done in 1377s: failures [428 428], per cycle 7.30e-03 +- 2.5e-04, mean 2422.2 ms
+relay1_p0.004_l0.0_unaware_s14_n10000: 10000 shots on 20 workers -> results/relay1_p0.004_l0.0_unaware_s14_n10000_shard0of1.npz
+done in 104s: failures [63 64], per cycle 1.06e-03 +- 9.4e-05, mean 155.9 ms
+relay5_p0.004_l0.0_unaware_s14_n10000: 10000 shots on 20 workers -> results/relay5_p0.004_l0.0_unaware_s14_n10000_shard0of1.npz
+done in 304s: failures [54 50], per cycle 8.71e-04 +- 8.5e-05, mean 524.5 ms
+relay1_p0.003_l0.0_unaware_s14_n50000: 50000 shots on 20 workers -> results/relay1_p0.003_l0.0_unaware_s14_n50000_shard0of1.npz
+done in 116s: failures [26 36], per cycle 1.03e-04 +- 1.3e-05, mean 31.2 ms
+relay5_p0.003_l0.0_unaware_s14_n50000: 50000 shots on 20 workers -> results/relay5_p0.003_l0.0_unaware_s14_n50000_shard0of1.npz
+done in 412s: failures [20 21], per cycle 6.84e-05 +- 1.1e-05, mean 146.1 ms
+skip g00 (done)
+g01 {'gamma0': 0.0954, 'gamma_dist_interval': [-0.4278, 0.6288], 'pre_iter': 40}
+relay1_p0.005_l0.0_unaware_s8_n3000_g01: 3000 shots on 20 workers -> results_gamma/relay1_p0.005_l0.0_unaware_s8_n3000_g01_shard0of1.npz
