@@ -2,6 +2,8 @@
 
   pip install pytest && python -m pytest test_kit.py
 """
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 import stim
@@ -16,7 +18,7 @@ from circuit import (
     rescale_noise,
     sample,
 )
-from decoders import bposd_decoder, per_cycle_rate, score
+from decoders import HierarchicalDecoder, bposd_decoder, per_cycle_rate, score
 from make_circuit import CODES, memory_experiment
 
 # code: (qubits, logical qubits)
@@ -102,3 +104,35 @@ def test_per_cycle_rate():
     assert per_cycle_rate(half_failed, cycles=2)[0] == pytest.approx(1 - 0.5 ** 0.5)
     rate, error = per_cycle_rate(np.zeros(10, bool), cycles=12)
     assert rate == 0 and error == 0
+
+
+def test_hierarchical_decoder_routes_only_flagged_shots():
+    class First:
+        def __init__(self):
+            self.calls = 0
+
+        def decode_detailed(self, syndrome):
+            self.calls += 1
+            return SimpleNamespace(decoding=np.array([0], dtype=np.uint8), success=True)
+
+    class Second:
+        def __init__(self):
+            self.calls = 0
+
+        def decode(self, syndrome):
+            self.calls += 1
+            return np.array([1], dtype=np.uint8)
+
+    first, second = First(), Second()
+    decoder = HierarchicalDecoder(first, second, lambda syndrome, result: bool(syndrome[0]))
+    failed, seconds = score(
+        decoder.decode,
+        np.array([[1]], dtype=np.uint8),
+        np.array([[0], [1]], dtype=np.uint8),
+        np.array([[0], [1]], dtype=np.uint8),
+    )
+
+    assert not failed.any()
+    assert (seconds > 0).all()
+    assert first.calls == 2 and second.calls == 1
+    assert decoder.escalated == 1

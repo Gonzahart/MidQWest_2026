@@ -41,13 +41,42 @@ def cpu_model():
     return platform.processor() or platform.machine()
 
 
+def load_live_model(path, seed):
+    from relay_router_pilot import FEATURES
+
+    with np.load(path) as artifact:
+        if artifact["feature_names"].tolist() != list(FEATURES):
+            raise ValueError("model features do not match the integrated router")
+        if abs(int(artifact["train_seed"]) - seed) < 2:
+            raise ValueError("training and timing seeds must be disjoint in both bases")
+        return artifact["center"], artifact["scale"], artifact["weights"], 0, artifact["thresholds"]
+
+
 def measure(job):
     import resource
 
-    failed, seconds, escalated, _, _ = run_slice(job)
+    decoder, args, _, _ = job
+    if decoder == "live-relay":
+        from relay_router_pilot import live_compare
+
+        result = live_compare(args, args.model)
+        row = dict(fail_x=result["failed_x"], fail_z=result["failed_z"],
+                   failed_pairs=result["failed_pairs"], ler_per_cycle=result["ler_per_cycle"],
+                   mean_ms=result["mean_ms"], p99_ms=result["p99_ms"],
+                   fallback_rate=result["fallback_rate"])
+    else:
+        failed, seconds, escalated, _, _ = run_slice(job)
+        failed_pair = failed.any(axis=1)
+        rate, _ = per_cycle_rate(failed_pair, 12)
+        elapsed = seconds.sum(axis=1) * 1000
+        row = dict(fail_x=int(failed[:, 0].sum()), fail_z=int(failed[:, 1].sum()),
+                   failed_pairs=int(failed_pair.sum()), ler_per_cycle=rate,
+                   mean_ms=elapsed.mean(), p99_ms=np.percentile(elapsed, 99),
+                   fallback_rate=escalated / (2 * args.shots))
+
     peak = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     peak_bytes = peak if sys.platform == "darwin" else peak * 1024
-    return failed, seconds, escalated, peak_bytes / 1024**2
+    return dict(row, peak_rss_mib=peak_bytes / 1024**2)
 
 
 def main():
@@ -57,6 +86,7 @@ def main():
     parser.add_argument("--shots", type=int, default=30)
     parser.add_argument("--seed", type=int, default=2)
     parser.add_argument("--decoders", nargs="+", default=DEFAULT_DECODERS)
+    parser.add_argument("--live-model", type=Path, help="trained NPZ from the live integration")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     if sys.platform != "darwin" and not sys.platform.startswith("linux"):
@@ -66,6 +96,16 @@ def main():
     if args.out.exists():
         parser.error(f"output already exists: {args.out}")
 
+    if "live-relay" in args.decoders:
+        if args.live_model is None or args.p_loss != 0:
+            parser.error("live-relay requires --live-model and zero qubit loss")
+        try:
+            from relay_router_pilot import live_compare  # verify teammate integration is present
+            args.model = load_live_model(args.live_model, args.seed)
+        except (ImportError, KeyError, ValueError, OSError) as error:
+            parser.error(f"cannot load live router: {error}")
+        args.test_shots, args.test_seed = args.shots, args.seed
+
     args.out_npz = None
     machine = {"cpu": cpu_model(), "platform": platform.platform(),
                "logical_cpus": os.cpu_count(), "workers": 1, "math_threads": 1,
@@ -74,22 +114,12 @@ def main():
     jobs = [(decoder, args, 0, 1) for decoder in args.decoders]
     # A fresh child per decoder prevents earlier runs contaminating later RSS peaks.
     with mp.get_context("spawn").Pool(1, maxtasksperchild=1) as pool:
-        for decoder, (failed, seconds, escalated, peak_mib) in zip(
-                args.decoders, pool.imap(measure, jobs), strict=True):
-            failed_pair = failed.any(axis=1)
-            rate, _ = per_cycle_rate(failed_pair, 12)
-            elapsed = seconds.sum(axis=1) * 1000
-            mean = elapsed.mean()
-            p99 = np.percentile(elapsed, 99)
+        for decoder, metrics in zip(args.decoders, pool.imap(measure, jobs), strict=True):
             rows.append(dict(decoder=decoder, p=args.p, p_loss=args.p_loss, seed=args.seed,
-                             shot_pairs=args.shots, fail_x=int(failed[:, 0].sum()),
-                             fail_z=int(failed[:, 1].sum()), failed_pairs=int(failed_pair.sum()),
-                             ler_per_cycle=rate, mean_ms=mean, p99_ms=p99,
-                             fallback_rate=escalated / (2 * args.shots), peak_rss_mib=peak_mib,
-                             **machine))
-            print(f"{decoder}: {failed_pair.sum()}/{args.shots} failed, "
-                  f"mean {mean:.1f} ms, p99 {p99:.1f} ms, peak RSS {peak_mib:.1f} MiB",
-                  flush=True)
+                             shot_pairs=args.shots, **metrics, **machine))
+            print(f"{decoder}: {metrics['failed_pairs']}/{args.shots} failed, "
+                  f"mean {metrics['mean_ms']:.1f} ms, p99 {metrics['p99_ms']:.1f} ms, "
+                  f"peak RSS {metrics['peak_rss_mib']:.1f} MiB", flush=True)
     with args.out.open("x", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator="\n")
         writer.writeheader()

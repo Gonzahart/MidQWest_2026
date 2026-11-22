@@ -107,6 +107,13 @@ inference.
 
 [Summary CSV](relay_router_scaleup_p005.csv) · [Replay cache](relay_router_scaleup_p005.npz)
 
+The pilot script also performs a **live learned-routing pass** on the held-out shots. It
+calibrates one fallback threshold per basis from training scores, then runs Relay-BP-1,
+feature extraction, model inference, and conditional Relay-BP-5 calls in sequence. New
+pilot outputs include this row in the CSV and a latency-versus-error plot next to the
+requested output prefix. The live row is the end-to-end measurement; cached replay rows
+remain useful for comparing fixed routing decisions but exclude feature and inference time.
+
 ## Task #8 single-worker timing smoke test
 
 30 matched X/Z pairs at p = 0.005, no loss, seed 2 on an Apple M5 with one
@@ -123,8 +130,7 @@ Peak worker RSS includes the runtime, sampled data, and decoder state.
 [Full smoke-test CSV](single_worker_timing_smoke_p005.csv) ·
 [Run instructions](../README.md#single-worker-timing-and-resource-benchmark)
 
-The final 1,000–2,000-pair comparison is pending the live router from task #7
-and the agreed benchmark machine.
+The final 1,000–2,000-pair comparison is pending the agreed benchmark machine and a lower-budget trained router. Baseline timing can proceed independently.
 
 ## Loss prior check on Sean's x86 PC (Sat 6:57 PM)
 
