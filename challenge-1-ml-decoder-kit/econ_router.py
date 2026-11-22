@@ -50,6 +50,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     for k in ("train-relay1", "train-relay5", "calibration", "test-relay1", "test-relay5", "out"):
         ap.add_argument("--" + k, required=True)
+    ap.add_argument("--monotone", action="store_true",
+                    help="rule-constrained model: benefit rises with non-convergence, syndrome weight, iterations, flags")
     args = ap.parse_args()
     a1, a5, c1 = load(args.train_relay1), load(args.train_relay5), load(args.calibration)
     t1, t5 = load(args.test_relay1), load(args.test_relay5)
@@ -59,7 +61,12 @@ def main():
     from sklearn.ensemble import HistGradientBoostingRegressor
     Xa = design(a1)
     benefit = a1["fail"].ravel().astype(int) - a5["fail"].ravel().astype(int)
-    ben = HistGradientBoostingRegressor(max_iter=300, learning_rate=0.05, max_leaf_nodes=15).fit(Xa, benefit)
+    cst = None
+    if args.monotone:
+        base = [-1, 0, 0, 1, -1, -1, 1] + [1] * (a1["X"].shape[-1] - 7)   # 7 relay features (+ flag features)
+        cst = base + base                                                  # raw + log1p copies
+    ben = HistGradientBoostingRegressor(max_iter=300, learning_rate=0.05, max_leaf_nodes=15, monotonic_cst=cst,
+                                        random_state=0).fit(Xa, benefit)
     cost = HistGradientBoostingRegressor(max_iter=300, learning_rate=0.05, max_leaf_nodes=15).fit(
         Xa, np.log(a5["t"].ravel() + 0.1))
     print(f"train: {benefit.size} basis shots, rescues {(benefit > 0).sum()}, regressions {(benefit < 0).sum()} "
@@ -104,6 +111,36 @@ def main():
             draws.append((fl.sum(), tt.mean(), np.percentile(tt, 99)))
         d = np.mean(draws, 0)
         rows.append(dict(policy="random decoder choice", target=round(f, 2), failed_pairs=d[0], mean_ms=d[1], p99_ms=d[2], esc=f))
+    # Pre-registered comparison: each ML budget vs the simple rule at the same MEASURED mean time on the test pairs,
+    # paired bootstrap over X/Z pairs (positive = ML saves failed pairs). Primary: the 10% budget.
+    rng_b = np.random.default_rng(7)
+    key = (np.where(t1["X"][..., 0] > 0.5, t1["it"], 1e6 + t1["it"]) + rng_b.random(t1["it"].shape)).ravel()
+    order = np.argsort(-key)
+    pair_t = lambda esc: (t1["t"] + np.where(esc, t5["t"], 0.0)).sum(1)
+    pair_f = lambda esc: np.where(esc, t5["fail"], t1["fail"]).any(1)
+    ks = np.arange(0, key.size + 1, max(1, key.size // 2000))
+    cum_means = []
+    for k in ks:
+        e = np.zeros(key.size, bool)
+        e[order[:k]] = True
+        cum_means.append(pair_t(e.reshape(-1, 2)).mean())
+    st_ml, sc_ml = jit(bt / ct * 0 + bt), jit(bc)                           # benefit-only score (cost model unused)
+    print("\nMATCHED COMPARISON (benefit model vs simple rule at equal measured mean time; paired bootstrap 95%)")
+    for frac in FRACS:
+        esc = st_ml > np.quantile(sc_ml, 1 - frac)
+        tm = pair_t(esc).mean()
+        k = ks[int(np.argmin(np.abs(np.array(cum_means) - tm)))]
+        es = np.zeros(key.size, bool)
+        es[order[:k]] = True
+        es = es.reshape(-1, 2)
+        fm, fs = pair_f(esc), pair_f(es)
+        diff = fs.astype(int) - fm.astype(int)
+        boots = [diff[rng_b.integers(0, diff.size, diff.size)].sum() for _ in range(2000)]
+        lo, hi = np.percentile(boots, [2.5, 97.5])
+        tag = "  <== PRIMARY" if frac == 0.1 else ""
+        print(f"budget {frac:.2f}: ML {fm.sum()} failed @ {tm:.0f} ms (esc {esc.mean():.3f}, p99 {np.percentile(pair_t(esc), 99):.0f}) | "
+              f"simple {fs.sum()} @ {pair_t(es).mean():.0f} ms (p99 {np.percentile(pair_t(es), 99):.0f}) | "
+              f"saved {diff.sum()} [{lo:.0f}, {hi:.0f}]{tag}")
     with open(args.out + ".csv", "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
