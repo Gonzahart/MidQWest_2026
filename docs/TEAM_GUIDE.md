@@ -4,9 +4,9 @@ Snapshot of the working guide from Nov 21, 2026, 4:20 PM.
 
 ## Start here
 
-We are building a two-stage decoder for the [[144,12,12]] Gross code. Fast BP decodes every shot, a small classifier sends hard shots to relay-BP, and atom-loss flags become decoder priors.
+We are building a two-stage decoder for the [[144,12,12]] Gross code. The current router runs Relay-BP-1 first and escalates selected shots to Relay-BP-5. We also test atom-loss flags as decoder priors.
 
-**Our claim:** relay-BP-5 accuracy at lower average latency, plus measurable gains from loss information. Every claim is made against the matching baseline (see Rules).
+**Goal:** test whether routing can approach Relay-BP-5 accuracy at lower mean latency and measure the gains from loss information. The 20% replay did not improve on Relay-BP-5. See Rules for matching baselines.
 
 **The challenge in brief** ([Infleqtion repo](https://github.com/Infleqtion/MidQWest-2026)):
 
@@ -87,8 +87,8 @@ Each row is owned by one person; put your name in the Owner cell when you take i
 | 4 | Loss sweep: p_loss = 0, 0.002, 0.005, 0.01 × {loss-unaware, flags as H rows, reweighted priors} | Sean → Compute | 3060 box / BlueQubit | start ~7 PM | Cached results + one plot | |
 | 5 | Stage-1 min-sum BP logging features at iterations 10/20/40/80 (unsatisfied checks, LLR sign flips, mean abs LLR, converged) + OSD-0 disagreement; 20k training shots at p = 0.005, seed 1 | Stage-1 BP | laptop | 10 PM | Features saved to `.npz` | |
 | 6 | Router: labels (not converged by 80, or logically wrong); logistic regression then boosted trees; compare to "converged" rule, OSD-0 threshold, random routing | Router | laptop | 4 AM | AUROC on a held-out seed for all | Held-out Relay-BP routing replay done (Sena). Full task criteria remain open. |
-| 7 | `HierarchicalDecoder.decode(syndrome)` plugging into `decoders.score`; end-to-end run with a dummy router; plot scripts | Integration | laptop | 10 PM | One results row + one plot | Comparison harness and smoke-test plot done (Sena). Live integration remains open. |
-| 8 | Final timing: one machine, single-threaded, about 1–2k shots per point | Compute | 3060 box | after 8 AM | Mean + p99 table | Timing harness and 30-pair smoke test done (Sena). Final run pending task #7 and benchmark machine. |
+| 7 | `HierarchicalDecoder.decode(syndrome)` plugging into `decoders.score`; end-to-end run with a dummy router; plot scripts | Integration | laptop | 10 PM | One results row + one plot | Comparison harness and smoke-test plot done (Sena). Live Relay-BP-1 → Relay-BP-5 integration smoke-tested (Lena). Lower-budget performance evaluation pending. |
+| 8 | Final timing: one machine, single-threaded, about 1–2k shots per point | Compute | 3060 box | after 8 AM | Mean + p99 table | Timing harness, 30-pair baseline smoke, and live-router adapter smoke done (Sena). Final runs pending benchmark machine access. Baselines can proceed; live timing is paused until lower-budget retraining. |
 | 9 | Slides and talk: outline at 10 PM, fill after the 8 AM freeze, rehearse twice | Integration leads, all help | — | 1 PM Sun | Rehearsed | |
 | S | Stretch (after 4 AM only): learned relay-BP memory strengths via `explicit_gammas`; learned loss-prior network; bb72 code | whoever is ahead | 3060 GPU / BlueQubit GPU | — | — | |
 ## Compute plan
