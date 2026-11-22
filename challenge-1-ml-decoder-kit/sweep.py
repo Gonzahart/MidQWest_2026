@@ -12,7 +12,7 @@ different machines can be merged into one result, and every decoder sees identic
   # merge every file in results/ and print one line per (decoder, p, p_loss, loss mode)
   python sweep.py summarize results/*.npz
 
-Decoders: bposd (kit settings), relay5 (kit relay-BP, stop_nconv=5), relay1 (stop_nconv=1), bp (plain
+Decoders: relay1capK (relay-BP-1 with at most K relay legs, then OSD-0 on its posteriors), bposd (kit settings), relay5 (kit relay-BP, stop_nconv=5), relay1 (stop_nconv=1), bp (plain
 min-sum BP, 80 iterations). With --p-loss > 0, --loss-mode chooses how loss flags are used:
 unaware (ignored), rows (flags as extra rows of H)
 blind / shuffled (controls for reweight: same projected graph and per-shot rebuild, but priors ignore the
@@ -22,6 +22,7 @@ Each worker process decodes single-threaded; --workers defaults to all cores.
 """
 import argparse
 import glob
+import json
 import os
 import platform
 import time
@@ -36,15 +37,51 @@ from decoders import bposd_decoder, per_cycle_rate, relay_decoder
 from loss_circuit import HERALD_COORDINATE, lossy_circuit, lossy_dem_matrices
 
 CYCLES = 12
+RELAY_OVERRIDES = {}  # set per job from --relay-overrides (gamma search); empty = kit settings
+
+
+def parse_overrides(text):
+    o = json.loads(text) if text else {}
+    if "gamma_dist_interval" in o:
+        o["gamma_dist_interval"] = tuple(o["gamma_dist_interval"])
+    return o
+
+
+class CappedRelay:
+    """Relay-BP-1 with at most `cap` relay legs; if it has not converged by then, OSD-0 on its own
+    posteriors (ldpc BpOsdDecoder with 1 BP iteration, priors set from the relay posterior ratios).
+    decode_detailed returns success=False when the fallback was used."""
+
+    def __init__(self, H, priors, cap):
+        from types import SimpleNamespace
+        from ldpc import BpOsdDecoder
+        self.ns = SimpleNamespace
+        self.relay = relay_decoder(H, priors, **(RELAY_OVERRIDES | {"stop_nconv": 1, "num_sets": cap}))
+        self.osd = BpOsdDecoder(H, error_channel=list(priors), max_iter=1, bp_method="minimum_sum",
+                                osd_method="OSD_0", osd_order=0)
+        self.fallbacks = 0
+
+    def decode_detailed(self, syndrome):
+        r = self.relay.decode_detailed(syndrome)
+        if r.success:
+            return r
+        self.fallbacks += 1
+        llr = np.clip(np.nan_to_num(np.asarray(r.posterior_ratios, float)), -50, 50)
+        q = np.clip(1.0 / (1.0 + np.exp(llr)), 1e-12, 1 - 1e-12)   # posterior_ratios = log(P0/P1)
+        self.osd.update_channel_probs(q)
+        return self.ns(decoding=np.asarray(self.osd.decode(syndrome), np.uint8), iterations=r.iterations,
+                       success=False, posterior_ratios=r.posterior_ratios)
 
 
 def build(name, H, priors):
+    if name.startswith("relay1cap"):          # e.g. relay1cap200 = at most 200 relay legs, then OSD-0
+        return CappedRelay(H, priors, int(name[len("relay1cap"):]))
     if name == "bposd":
         return bposd_decoder(H, priors)
     if name == "relay5":
-        return relay_decoder(H, priors)
+        return relay_decoder(H, priors, **RELAY_OVERRIDES)
     if name == "relay1":
-        return relay_decoder(H, priors, stop_nconv=1)
+        return relay_decoder(H, priors, **(RELAY_OVERRIDES | {"stop_nconv": 1}))
     if name == "bp":
         return BpDecoder(H, error_channel=list(priors), max_iter=80, bp_method="minimum_sum", ms_scaling_factor=1.0)
     raise ValueError(f"unknown decoder {name}")
@@ -125,6 +162,8 @@ def problems(args):
 
 def work(job):
     args, idx = job
+    RELAY_OVERRIDES.clear()
+    RELAY_OVERRIDES.update(parse_overrides(args.relay_overrides))
     fail = np.zeros((len(idx), 2), bool)
     secs = np.zeros((len(idx), 2))
     iters = np.zeros((len(idx), 2), np.int32)
@@ -160,6 +199,8 @@ def run(args):
     chunks = [c for c in np.array_split(mine, args.workers * 4) if len(c)]
     os.makedirs(args.out, exist_ok=True)
     name = f"{args.decoder}_p{args.p}_l{args.p_loss}_{args.loss_mode}_s{args.seed}_n{args.shots}"
+    if args.tag:
+        name += f"_{args.tag}"
     path = os.path.join(args.out, f"{name}_shard{args.shard}of{args.nshards}.npz")
     print(f"{name}: {len(mine)} shots on {args.workers} workers -> {path}", flush=True)
     start = time.time()
@@ -171,7 +212,8 @@ def run(args):
                         shot_idx=idx, fail=fail, seconds=secs, iterations=iters, features=feats,
                         feature_names=np.asarray(FEATURE_NAMES), host=platform.node(),
                         workers=args.workers, cycles=CYCLES, basis=np.asarray(["X", "Z"]),
-                        stim_version=stim.__version__)
+                        stim_version=stim.__version__, tag=args.tag,
+                        relay_overrides=json.dumps(parse_overrides(args.relay_overrides), default=list))
     rate, err = per_cycle_rate(fail.any(axis=1), CYCLES)
     print(f"done in {time.time() - start:.0f}s: failures {fail.sum(axis=0)}, per cycle {rate:.2e} +- {err:.1e}, "
           f"mean {secs.sum(axis=1).mean() * 1e3:.1f} ms", flush=True)
@@ -181,9 +223,11 @@ def summarize(args):
     groups = {}
     for path in sorted(set(sum((glob.glob(g) for g in args.files), []))):
         d = np.load(path)
-        key = (str(d["decoder"]), float(d["p"]), float(d["p_loss"]), str(d["loss_mode"]), int(d["seed"]))
+        tag = str(d["tag"]) if "tag" in d.files else ""
+        key = (str(d["decoder"]) + (f"[{tag}]" if tag else ""), float(d["p"]), float(d["p_loss"]),
+               str(d["loss_mode"]), int(d["seed"]))
         groups.setdefault(key, []).append(d)
-    print(f"{'decoder':8s} {'p':>6s} {'p_loss':>6s} {'mode':7s} {'shots':>6s} {'fail X':>6s} {'fail Z':>6s} "
+    print(f"{'decoder':16s} {'p':>6s} {'p_loss':>6s} {'mode':7s} {'shots':>6s} {'fail X':>6s} {'fail Z':>6s} "
           f"{'LER/cycle':>9s} {'+-':>8s} {'mean ms':>8s} {'p99 ms':>8s}")
     for key, parts in sorted(groups.items()):
         idx = np.concatenate([d["shot_idx"] for d in parts])
@@ -192,7 +236,7 @@ def summarize(args):
         fail = np.concatenate([d["fail"] for d in parts])
         ms = np.concatenate([d["seconds"] for d in parts]).sum(axis=1) * 1e3
         rate, err = per_cycle_rate(fail.any(axis=1), CYCLES)
-        print(f"{key[0]:8s} {key[1]:6.3f} {key[2]:6.3f} {key[3]:7s} {len(idx):6d} {fail[:, 0].sum():6d} "
+        print(f"{key[0]:16s} {key[1]:6.3f} {key[2]:6.3f} {key[3]:7s} {len(idx):6d} {fail[:, 0].sum():6d} "
               f"{fail[:, 1].sum():6d} {rate:9.2e} {err:8.1e} {ms.mean():8.1f} {np.percentile(ms, 99):8.0f}")
     print("Timing is only comparable for files from the same machine (see the host field).")
 
@@ -201,7 +245,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="cmd", required=True)
     r = sub.add_parser("run")
-    r.add_argument("--decoder", choices=["bposd", "relay5", "relay1", "bp"], required=True)
+    r.add_argument("--decoder", required=True,
+                   help="bposd, relay5, relay1, bp, or relay1capK (relay-BP-1 with at most K legs, then OSD-0)")
     r.add_argument("--p", type=float, default=0.004)
     r.add_argument("--p-loss", type=float, default=0.0)
     r.add_argument("--loss-mode", choices=["unaware", "rows", "reweight", "blind", "shuffled"], default="unaware")
@@ -211,9 +256,14 @@ def main():
     r.add_argument("--nshards", type=int, default=1)
     r.add_argument("--workers", type=int, default=os.cpu_count())
     r.add_argument("--out", default="results")
+    r.add_argument("--relay-overrides", default="",
+                   help='JSON dict of relay-BP settings to change, e.g. \'{"gamma0": 0.1, "pre_iter": 120}\'')
+    r.add_argument("--tag", default="", help="label appended to the output name (required with --relay-overrides)")
     s = sub.add_parser("summarize")
     s.add_argument("files", nargs="+")
     args = parser.parse_args()
+    if args.cmd == "run" and args.relay_overrides and not args.tag:
+        parser.error("--relay-overrides needs --tag so results don't overwrite kit-setting files")
     run(args) if args.cmd == "run" else summarize(args)
 
 
