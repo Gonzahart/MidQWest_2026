@@ -176,3 +176,23 @@ per point (Gonzalo's Mac). 0% loss: 10,000-pair no-loss runs (BlueQubit). Figure
 The gain is largest where ordinary noise is lowest: at p = 0.003 and 1% loss, ignoring loss makes the decoder 6x worse
 than no loss; with reweighted priors it is only 1.25x worse. Mean decode times stay in the same range (p = 0.003: 183-208 ms
 reweighted vs 165-310 ms ignored, 20 parallel workers; not final timing).
+
+## Loss sweep, BP-OSD (Gonzalo's Mac, finished 9:10 PM)
+Seed 2, 2,000 pairs per point, 8 workers. "Fixed / broken" = pairs where only the loss-ignoring / only the reweighted decoder failed.
+
+| p | Loss | Ignored | Reweighted | Gain | Fixed / broken |
+|---|---|---|---|---|---|
+| 0.003 | 0.2% | 5.9e-4 | 4.2e-4 | 1.4x (n.s.) | 9 / 5 |
+| 0.003 | 0.5% | 1.39e-3 | 5.0e-4 | 2.8x | 28 / 7 |
+| 0.003 | 1.0% | 3.09e-3 | 4.6e-4 | **6.7x** | 69 / 7 |
+| 0.004 | 0.2% | 4.97e-3 | 4.75e-3 | 1.05x (n.s.) | 52 / 47 |
+| 0.004 | 0.5% | 8.93e-3 | 4.57e-3 | 2.0x | 135 / 38 |
+| 0.004 | 1.0% | 1.70e-2 | 6.34e-3 | 2.7x | 280 / 55 |
+| 0.005 | 0.2% | 2.63e-2 | 2.39e-2 | 1.1x | 214 / 170 |
+| 0.005 | 0.5% | 3.67e-2 | 2.57e-2 | 1.4x | 320 / 134 |
+| 0.005 | 1.0% | 5.68e-2 | 3.02e-2 | 1.9x | 502 / 108 |
+
+- Reweighting helps BP-OSD too, with the same pattern as relay-BP-5: bigger gains at more loss and lower p. At p = 0.003,
+  1% loss, reweighted BP-OSD (4.6e-4) is back at its no-loss value (4.8e-4).
+- **Timing caveat:** reweighted BP-OSD was slower in these runs (mean +20-50%, p99 up to 2.7x), likely because OSD
+  runs more often with sharp priors. Relay-BP-5 showed no consistent slowdown. Check in the single-worker timing.
