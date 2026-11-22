@@ -307,3 +307,23 @@ calibration set. Train seed 2 (relay-BP-1 and relay-BP-5 on the SAME shots), thr
 - Correction: the seed-1 relay-BP-1 (20k) and relay-BP-5 (10k) caches are NOT the same shots (different shot counts
   draw different samples; 1.75% of syndromes match), so rescue labels built from them were wrong. Always pair files
   with the same seed, shot count and machine.
+
+## Flag robustness (Track D, BlueQubit, Sun ~3:15 AM)
+`run_robustness.sh`: relay-BP-5, p = 0.004, 1% loss, seed 12, 2,000 pairs per run, same shots everywhere (noisy flags are
+seeded per shot). LER per cycle (basis failures X / Z in brackets). Accuracy only (20 workers).
+
+| Setting | LER/cycle | vs loss ignored |
+|---|---:|---:|
+| loss ignored | 4.13e-3 (50 / 53) | 1x |
+| **flags used, exact prior 1/2** | **1.22e-3 (15 / 15)** | **3.4x** |
+| fired prior 0.4 / 0.3 / 0.2 | 1.26e-3 / 1.51e-3 / 1.51e-3 | 3.3x / 2.7x / 2.7x |
+| 5% of flags missed | 1.34e-3 | 3.1x |
+| 20% of flags missed | 1.85e-3 | 2.2x |
+| 20% missed, unfired prior raised to 1e-3 ("aware") | 2.41e-3 | 1.7x |
+| 5% extra false flags | 1.22e-3 | 3.4x |
+| 20% extra false flags | 1.30e-3 | 3.2x |
+
+- The exact 1/2 is the best prior; lower values cost a little, so the method does not hinge on fine-tuning it.
+- False flags barely matter (20% extra false flags: 3.2x instead of 3.4x).
+- Missed flags hurt more but degrade gracefully: with 20% of losses unreported the decoder still has 2.2x fewer failures.
+- Hedging for missed flags by raising every unfired column's prior made it worse: trusting the flags is the better rule.
