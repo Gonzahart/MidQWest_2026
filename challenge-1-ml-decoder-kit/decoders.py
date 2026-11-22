@@ -4,6 +4,7 @@ The settings are those of the authors' published results for the Gross code:
 https://github.com/trmue/relay, examples/data/bicycle_bivariate_144_12_12_fine_ler_sweep.csv
 """
 import time
+from collections.abc import Callable
 
 import numpy as np
 from ldpc import BpOsdDecoder
@@ -26,6 +27,29 @@ def relay_decoder(H, priors, **changes):
     """Relay-BP at the authors' settings. Keyword arguments replace single settings."""
     import relay_bp  # optional: needs a Rust build
     return relay_bp.RelayDecoderF64(H.tocsr(), error_priors=priors, **(RELAY_SETTINGS | changes))
+
+
+class HierarchicalDecoder:
+    """Run a fast decoder, then invoke a stronger decoder when a router flags the shot.
+
+    The first decoder must expose ``decode_detailed(syndrome)`` and return a result with
+    ``decoding``. ``route`` receives the syndrome and that result, and returns whether the
+    second decoder should run. Both decoders are retained across calls, matching the stateful
+    behavior of Relay-BP.
+    """
+
+    def __init__(self, first, second, route: Callable):
+        self.first = first
+        self.second = second
+        self.route = route
+        self.escalated = 0
+
+    def decode(self, syndrome):
+        result = self.first.decode_detailed(syndrome)
+        if self.route(syndrome, result):
+            self.escalated += 1
+            return self.second.decode(syndrome)
+        return result.decoding
 
 
 def score(decode, L, det, obs, before_shot=None):
