@@ -24,6 +24,7 @@ and basis arrays label the axes. The stored seed is for X memory; Z uses seed + 
 import argparse
 import csv
 import os
+import platform
 import time
 from multiprocessing import Pool
 from pathlib import Path
@@ -201,7 +202,7 @@ def main():
                 seed=args.seed,
                 cycles=args.cycles,
                 workers=args.workers,
-                host=os.uname().nodename,
+                host=platform.node(),
                 stim_version=stim.__version__,
                 shots=args.shots,
             )
