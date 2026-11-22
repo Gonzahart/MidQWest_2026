@@ -1,0 +1,10 @@
+nohup: ignoring input
+relay1+H: 4/1000 failed, mean 17.3 ms, p99 196.2 ms, peak RSS 124.1 MiB
+relay+H: 1/1000 failed, mean 88.3 ms, p99 701.4 ms, peak RSS 118.2 MiB
+bp>relay+H: 0/1000 failed, mean 64.6 ms, p99 624.0 ms, peak RSS 122.0 MiB
+relay1+H: 4/1000 failed, mean 70.1 ms, p99 1130.0 ms, peak RSS 124.2 MiB
+relay+H: 4/1000 failed, mean 281.6 ms, p99 3091.0 ms, peak RSS 120.8 MiB
+bp>relay+H: 6/1000 failed, mean 261.5 ms, p99 3629.1 ms, peak RSS 123.3 MiB
+relay1+H: 94/1000 failed, mean 584.7 ms, p99 5761.3 ms, peak RSS 122.6 MiB
+relay+H: 77/1000 failed, mean 1426.8 ms, p99 8896.2 ms, peak RSS 123.5 MiB
+bp>relay+H: 74/1000 failed, mean 1413.0 ms, p99 8034.2 ms, peak RSS 120.8 MiB
