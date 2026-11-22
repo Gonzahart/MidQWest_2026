@@ -25,7 +25,8 @@ def compare(args):
     agree = np.empty(shape, bool)
     rebuild_ms = []
     for b, (H, L, priors, det, obs, _) in enumerate(problems(args)):
-        gpu = GpuRelay(H, priors, stop_nconv=args.stop_nconv)
+        extra = {"gamma_ensemble_size": args.gamma_ensemble_size} if args.gamma_ensemble_size else {}
+        gpu = GpuRelay(H, priors, stop_nconv=args.stop_nconv, **extra)
         start = time.perf_counter()
         gpu.set_priors(priors)
         rebuild_ms.append(1000 * (time.perf_counter() - start))
@@ -56,6 +57,7 @@ def compare(args):
         rate, _ = per_cycle_rate(fail.any(axis=1), CYCLES)
         row = dict(decoder=name, p=args.p, p_loss=args.p_loss, loss_mode=args.loss_mode,
                    seed=args.seed, shots=args.shots, stop_nconv=args.stop_nconv,
+                   gamma_ensemble_size=args.gamma_ensemble_size or 1,
                    fail_x=fail[:, 0].sum(), fail_z=fail[:, 1].sum(),
                    failed_pairs=fail.any(axis=1).sum(), ler_per_cycle=rate,
                    mean_ms=ms.mean(), p50_ms=np.median(ms), p99_ms=np.percentile(ms, 99),
@@ -81,6 +83,8 @@ def main():
     parser.add_argument("--shots", type=int, default=1000)
     parser.add_argument("--seed", type=int, default=8)
     parser.add_argument("--stop-nconv", type=int, choices=(1, 5), default=5)
+    parser.add_argument("--gamma-ensemble-size", type=int, default=None,
+                        help="GPU relay lanes raced in parallel (NVIDIA gamma_ensemble_size); default 1")
     parser.add_argument("--out", required=True, type=Path)
     args = parser.parse_args()
     if args.seed < 8 or args.shots < 1 or args.out.suffix != ".csv":
