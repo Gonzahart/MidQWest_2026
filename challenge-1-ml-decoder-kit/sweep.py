@@ -22,6 +22,7 @@ Each worker process decodes single-threaded; --workers defaults to all cores.
 import argparse
 import glob
 import os
+import platform
 import time
 from multiprocessing import Pool
 
@@ -160,7 +161,7 @@ def run(args):
     np.savez_compressed(path, decoder=args.decoder, p=args.p, p_loss=args.p_loss, loss_mode=args.loss_mode,
                         seed=args.seed, shots=args.shots, shard=args.shard, nshards=args.nshards,
                         shot_idx=idx, fail=fail, seconds=secs, iterations=iters, features=feats,
-                        feature_names=np.asarray(FEATURE_NAMES), host=os.uname().nodename,
+                        feature_names=np.asarray(FEATURE_NAMES), host=platform.node(),
                         workers=args.workers, cycles=CYCLES, basis=np.asarray(["X", "Z"]),
                         stim_version=stim.__version__)
     rate, err = per_cycle_rate(fail.any(axis=1), CYCLES)
