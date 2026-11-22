@@ -224,3 +224,17 @@ VM: compare arms with each other only. Reproduce:
 overlapping shards, and writes the host, input files and skipped files into the CSV next to the PNG.
 Regenerated `loss_sweep_relay5.png/.csv` and `loss_sweep_bposd.png/.csv`: every number matches the tables
 above, except the p = 0.003 no-loss point now uses the 50k run (5.3e-5 instead of 8.3e-5 from 10k).
+
+## Why the fired-herald prior is 1/2: injection check (Sun ~12:30 AM)
+`python check_herald_prior.py > results/herald_prior_check.txt`. For data qubits 72 and 150, lost in cycle 0, 5
+and 11, in both memory bases, we injected I, X, Y and Z by hand at the erasure location in a noiseless copy of
+the circuit and compared the flipped check detectors and logicals with the decoder's DEM columns on that herald.
+- X memory: I and X do nothing (no X-check or X-logical flip). Y and Z flip the same 3 checks and the same
+  logicals. So the four equally likely branches collapse into "nothing" (prob 1/2) and one column (prob 1/2).
+  Z memory: the same with I+Z and X+Y. Every case matched the DEM exactly (column, logicals, mapping).
+- Every one of the 1,728 heralds (12 cycles x 144 data qubits) has exactly one column with check support, with
+  prior/p_loss = 0.499-0.500. So for a fired herald the merged channel has only one relevant branch; the
+  "independent mechanisms" approximation does not matter there.
+- The projection onto check rows (Reweighted) drops 1,728 herald-only columns per basis; none flips a logical.
+- Sizes: with heralds, H is 2,664 rows (936 check + 1,728 herald) x 12,240 columns, 39,312 nonzeros. Projected
+  (what reweight decodes): 936 rows x 10,512 columns. Kit no-loss problem: 936 x 8,784.
