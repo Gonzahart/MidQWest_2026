@@ -92,8 +92,16 @@ class Reweighted:
     left maximally mixed), columns of UNFIRED flags get ~0, all others keep their DEM prior. Decodes on
     the check rows only, so H stays the kit's size. BP-OSD updates priors in place; relay-BP is rebuilt."""
 
-    def __init__(self, name, H_full, priors, is_herald, p_loss, control="reweight"):
+    def __init__(self, name, H_full, priors, is_herald, p_loss, control="reweight",
+                 fired_prior=None, unfired_prior=1e-9, flag_fn=0.0, flag_fp=0.0, noise_seed=0):
         self.control = control
+        # robustness options (defaults = perfect flags, exact 1/2 prior):
+        #   fired_prior: prior given to every column of a fired flag (None = prior/p_loss, i.e. ~1/2)
+        #   unfired_prior: prior of columns whose flag did not fire
+        #   flag_fn: each true flag is missed with this probability
+        #   flag_fp: false flags per true flag on average (each unfired flag fires with prob flag_fp * p_loss)
+        self.unfired_prior, self.flag_fn, self.flag_fp = unfired_prior, flag_fn, flag_fp
+        self.p_loss, self.noise_seed = p_loss, noise_seed
         H_full = H_full.tocsr()
         self.check_rows, self.herald_rows = np.flatnonzero(~is_herald), np.flatnonzero(is_herald)
         H_check, H_herald = H_full[self.check_rows].tocsc(), H_full[self.herald_rows].tocsc()
@@ -103,6 +111,8 @@ class Reweighted:
         self.has_herald = np.asarray(self.herald.sum(axis=0)).ravel() > 0
         # P(column fired | its herald fired) = prior / p_loss: 1/2 when Y and Z merge into one column.
         self.given_loss = np.clip(self.priors / p_loss, 1e-9, 0.5)
+        if fired_prior is not None:
+            self.given_loss = np.full_like(self.given_loss, fired_prior)
         self.keep = keep
         self.decoder = build(name, self.H, self.priors)
 
@@ -110,14 +120,24 @@ class Reweighted:
         if self.control == "blind":
             return self.priors.copy()  # unconditional DEM priors: herald identity ignored, same graph
         p = self.priors.copy()
-        p[self.has_herald] = 1e-9
+        p[self.has_herald] = self.unfired_prior
         hit = np.asarray(self.herald[np.flatnonzero(fired)].sum(axis=0)).ravel() > 0
         p[hit] = self.given_loss[hit]
         return p
 
-    def decode(self, syndrome_full, flags_from=None):
+    def noisy(self, fired, shot):
+        """Flags as an imperfect detector would report them; the same corruption for a shot in every run."""
+        if not (self.flag_fn or self.flag_fp):
+            return fired
+        rng = np.random.default_rng([self.noise_seed, int(shot)])
+        out = fired.astype(bool).copy()
+        out[out & (rng.random(out.size) < self.flag_fn)] = False
+        out[~fired.astype(bool) & (rng.random(out.size) < self.flag_fp * self.p_loss)] = True
+        return out
+
+    def decode(self, syndrome_full, flags_from=None, shot=0):
         source = syndrome_full if flags_from is None else flags_from
-        p = self.priors_for(source[self.herald_rows])
+        p = self.priors_for(self.noisy(source[self.herald_rows], shot))
         if self.name == "bposd":
             self.decoder.update_channel_probs(p)
         else:
@@ -171,7 +191,9 @@ def work(job):
     for b, (H, L, priors, det, obs, is_herald) in enumerate(problems(args)):
         reweight = args.loss_mode in ("reweight", "blind", "shuffled") and args.p_loss > 0
         if reweight:
-            rw = Reweighted(args.decoder, H, priors, is_herald, args.p_loss, control=args.loss_mode)
+            rw = Reweighted(args.decoder, H, priors, is_herald, args.p_loss, control=args.loss_mode,
+                            fired_prior=args.fired_prior, unfired_prior=args.unfired_prior,
+                            flag_fn=args.flag_fn, flag_fp=args.flag_fp, noise_seed=1000 * args.seed + b)
             L = L.tocsc()[:, rw.keep]
         else:
             decoder = build(args.decoder, H, priors)
@@ -180,7 +202,7 @@ def work(job):
             if reweight:
                 # shuffled control: flags from another shot (fixed derangement k -> k + shots//2)
                 other = det[(k + args.shots // 2) % args.shots] if args.loss_mode == "shuffled" else None
-                error, iters[j, b] = np.asarray(rw.decode(det[k], flags_from=other), np.uint8), -1
+                error, iters[j, b] = np.asarray(rw.decode(det[k], flags_from=other, shot=k), np.uint8), -1
             else:
                 if args.decoder.startswith("relay"):
                     result = decoder.decode_detailed(det[k])
@@ -213,7 +235,9 @@ def run(args):
                         feature_names=np.asarray(FEATURE_NAMES), host=platform.node(),
                         workers=args.workers, cycles=CYCLES, basis=np.asarray(["X", "Z"]),
                         stim_version=stim.__version__, tag=args.tag,
-                        relay_overrides=json.dumps(parse_overrides(args.relay_overrides), default=list))
+                        relay_overrides=json.dumps(parse_overrides(args.relay_overrides), default=list),
+                        loss_options=json.dumps({"fired_prior": args.fired_prior, "unfired_prior": args.unfired_prior,
+                                                 "flag_fn": args.flag_fn, "flag_fp": args.flag_fp}))
     rate, err = per_cycle_rate(fail.any(axis=1), CYCLES)
     print(f"done in {time.time() - start:.0f}s: failures {fail.sum(axis=0)}, per cycle {rate:.2e} +- {err:.1e}, "
           f"mean {secs.sum(axis=1).mean() * 1e3:.1f} ms", flush=True)
@@ -259,11 +283,18 @@ def main():
     r.add_argument("--relay-overrides", default="",
                    help='JSON dict of relay-BP settings to change, e.g. \'{"gamma0": 0.1, "pre_iter": 120}\'')
     r.add_argument("--tag", default="", help="label appended to the output name (required with --relay-overrides)")
+    r.add_argument("--fired-prior", type=float, default=None,
+                   help="reweight: prior for columns of fired flags (default: exact, ~1/2)")
+    r.add_argument("--unfired-prior", type=float, default=1e-9, help="reweight: prior for columns of unfired flags")
+    r.add_argument("--flag-fn", type=float, default=0.0, help="reweight: probability a true flag is missed")
+    r.add_argument("--flag-fp", type=float, default=0.0, help="reweight: false flags per true flag")
     s = sub.add_parser("summarize")
     s.add_argument("files", nargs="+")
     args = parser.parse_args()
-    if args.cmd == "run" and args.relay_overrides and not args.tag:
-        parser.error("--relay-overrides needs --tag so results don't overwrite kit-setting files")
+    if args.cmd == "run" and not args.tag and (args.relay_overrides or args.fired_prior is not None or args.flag_fn
+                                               or args.flag_fp or args.unfired_prior != 1e-9):
+        parser.error("--relay-overrides / --fired-prior / --unfired-prior / --flag-fn / --flag-fp need --tag "
+                     "so results don't overwrite default-setting files")
     run(args) if args.cmd == "run" else summarize(args)
 
 
