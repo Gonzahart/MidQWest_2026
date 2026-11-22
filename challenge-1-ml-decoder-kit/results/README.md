@@ -257,3 +257,53 @@ simple rule (not converged first, then most iterations) everywhere, and p99 is a
 escalated shots are the slowest ones and pay for both decoders. Note: boosted with seed-4 calibration at p = 0.005
 escalated 0% (threshold above every test score), so the pre-registered logistic policy is the one reported.
 CSVs: `router_fresh_s10_p0.005.csv`, `router_calibrated_s2_p0.003.csv`. Coin flip: `python router_coinflip.py <relay1 file> <relay5 file> <router mean ms>`.
+
+## Leg cap + OSD-0 fallback (`relay1capK`, BlueQubit batch 4, Sun ~2:15 AM)
+Seed 10, 10k pairs, all runs on one machine with 20 workers (compare within the table only). Relay-BP-1 with at most K
+relay legs; if unconverged, OSD-0 on relay's own posteriors.
+
+| p | Decoder | Failed pairs | Mean ms | p99 ms | Max ms | vs relay-BP-1 |
+|---|---|---:|---:|---:|---:|---|
+| 0.004 | relay-BP-1 | 140 | 166 | 3,254 | 9,737 | — |
+| | cap 200 + OSD-0 | 146 | 152 | 3,235 | 7,043 | +6 (p = 0.38) |
+| | cap 100 + OSD-0 | 162 | 127 | 2,838 | 4,027 | +22 (p = 0.006) |
+| | relay-BP-5 | 102 | 564 | 9,609 | 18,045 | −38 |
+| 0.005 | relay-BP-1 | 938 | 1,043 | 9,704 | 19,265 | — |
+| | cap 200 + OSD-0 | 1,005 | 865 | 6,916 | 13,292 | +67 (p = 0.003) |
+| | cap 100 + OSD-0 | 1,178 | 627 | 3,866 | 7,255 | +240 |
+| | relay-BP-5 | 817 | 2,447 | 12,908 | 19,228 | −121 |
+
+A cap is a speed/accuracy dial, not a free lunch: cap 200 is nearly free at p = 0.004, but tighter caps lose accuracy
+fast because OSD-0 is a weak fallback. Relay-BP's random memory draws carry over between calls, so capped runs were
+decoded for real, not simulated from caches.
+
+## ML early exit after relay-BP's first leg (negative result)
+`exit_data.py` / `exit_router.py`, p = 0.005, seed 1, 10k pairs (Mac), split in halves for train/test. On the 36% of
+basis shots the first leg leaves unconverged (98% of decode time), continuing relay-BP fails 13% and OSD-0 fails 48%;
+only 149 of 7,141 are OSD-0-right / relay-wrong. Classifier AUROC 0.62 for "keep going helps", and the simple rule
+(continue the shots with the fewest unsatisfied checks) beats it; any exit rate that saves ~25% mean time costs ~25%
+more failed pairs. Dropped: OSD-0 is too weak a fallback for an exit to pay.
+
+## Net-benefit ("economic") router (Sean's question, Sun ~2:45 AM)
+`econ_router.py`. Label per basis shot = int(relay-BP-1 wrong) − int(relay-BP-5 wrong) (+1 rescue, −1 regression).
+Gradient-boosted regressor on relay-BP-1's features; escalate when predicted benefit is above a threshold fixed on a
+calibration set. Train seed 2 (relay-BP-1 and relay-BP-5 on the SAME shots), thresholds seed 4, test seed 10, p = 0.005.
+
+| Policy | Escalated | Failed pairs | Mean ms | Random decoder choice at same mean |
+|---|---:|---:|---:|---:|
+| relay-BP-1 alone | 0% | 938 | 1,043 | — |
+| net benefit, 2% budget | 2.2% | **837** (fixes 102, breaks 1 vs relay-BP-1) | 1,434 | 904 |
+| simple rule, 2% | 2.1% | 850 | 1,437 | 904 |
+| earlier logistic router (locked) | 2.2% | 851 | 1,441 | 903 |
+| net benefit, 10% budget | 8.5% | **816** (= relay-BP-5, paired p = 1) | ~2,030 | 853 |
+| relay-BP-5 alone | 100% | 817 | 2,447 | — |
+
+- Predicting net benefit (including the 211 basis shots where relay-BP-5 is wrong and relay-BP-1 right) beats predicting
+  "relay-BP-1 wrong": relay-BP-5 accuracy at ~17% less mean time.
+- Adding a predicted cost (benefit / cost ranking) made it worse: it favours cheap, low-benefit shots.
+- p99 stays ~19 s (escalated shots pay both decoders).
+- Caveats: seed 10 was used once before (earlier router, not this model); model trained on another machine.
+  Fresh confirmation at all three p on seed 14 is queued on BlueQubit.
+- Correction: the seed-1 relay-BP-1 (20k) and relay-BP-5 (10k) caches are NOT the same shots (different shot counts
+  draw different samples; 1.75% of syndromes match), so rescue labels built from them were wrong. Always pair files
+  with the same seed, shot count and machine.
