@@ -125,3 +125,27 @@ Peak worker RSS includes the runtime, sampled data, and decoder state.
 
 The final 1,000–2,000-pair comparison is pending the live router from task #7
 and the agreed benchmark machine.
+
+## Loss prior check on Sean's x86 PC (Sat 6:57 PM)
+
+At p = 0.004 and p_loss = 0.005, all five settings used the same 2,000 X/Z pairs on this PC (seed 1). The Mac and PC sampled different shots with the same seed. Each paired comparison uses shots from a single machine.
+
+| Decoder | Loss info | Fail X, Z | LER / cycle | Mean ms | p99 ms |
+|---|---|---|---|---|---|
+| BP-OSD | ignored | 97, 99 | 8.2e-3 ± 0.6e-3 | 265 | 681 |
+| BP-OSD | reweighted, prior 1/4 | 62, 54 | 4.9e-3 ± 0.5e-3 | 297 | 884 |
+| BP-OSD | reweighted, P(col \| loss) | 61, 57 | 4.8e-3 ± 0.5e-3 | 300 | 884 |
+| relay-BP-5 | ignored | 28, 34 | 2.6e-3 ± 0.3e-3 | 523 | 6576 |
+| relay-BP-5 | reweighted, P(col \| loss) | 11, 12 | **9.6e-4 ± 2.0e-4** | 345 | 5368 |
+
+The two-sided exact sign test counts pairs where only one setting failed.
+
+| Decoder | Settings compared (first vs second) | Only first failed | Only second failed | Exact test p |
+|---|---|---:|---:|---:|
+| BP-OSD | Reweighted vs ignored | 51 | 127 | 1.15e-8 |
+| relay-BP-5 | Reweighted vs ignored | 8 | 47 | 8.07e-8 |
+| BP-OSD | Prior 1/4 vs conditional prior | 51 | 50 | 1 |
+
+On the PC, reweighting reduced relay-BP-5's logical error rate per cycle by a factor of 2.7. The Mac also showed a reduction, about 2×. For BP-OSD, the paired comparison found no detectable difference between the two fired-herald priors at this noise level.
+
+Mean relay-BP-5 time fell from 523 to 345 ms on the PC. Eight workers ran concurrently, so these timings are approximate. Sean keeps the per-shot files (`results/t3_*`) on the PC because their run metadata matches the Mac files and `summarize` would merge them.
