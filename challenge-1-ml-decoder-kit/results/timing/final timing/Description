@@ -1,0 +1,3 @@
+Relay-BP-1 has 4.5× lower mean latency than relay-BP-5 at p = 0.003 and 0.004, and 2.5× at p = 0.005. 1,000 pairs can't separate their error rates.
+Relay-BP-5's error rate is 4–8× lower than BP-OSD's at p = 0.003–0.004 (3.4× at p = 0.005), and relay-BP-1's is 3.5–8× lower. But BP-OSD has the tightest tail: p99 around 0.5 s at every p, vs 3–4 s for relay-BP-5 at p = 0.004–0.005. That trade-off is a good point for the latency slide.
+BP-OSD's error rates match the kit this time (3.8e-3 vs the kit's 4.4e-3 at p = 0.004, 2.28e-2 vs 2.3e-2 at 0.005). So the earlier 4σ BP-OSD result on this PC looks like a fluke, not a Windows build problem. Still, quote error rates from the 10k-shot sweeps; 1,000 pairs gives wide error bars.
