@@ -180,7 +180,7 @@ and its training seeds must be disjoint from the benchmark seeds.
 for p in 0.003 0.004 0.005; do
   python benchmark_timing.py --p "$p" --p-loss 0 --shots 1000 --seed 2 \
     --decoders relay1+H relay+H 'bp>relay+H' live-relay \
-    --live-model /path/to/trained_router.npz --out "final_timing_p${p}.csv"
+    --live-model results/task8_live_router_model.npz --out "final_timing_p${p}.csv"
 done
 ```
 
