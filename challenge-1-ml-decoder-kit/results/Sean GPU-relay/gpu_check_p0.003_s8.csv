@@ -1,0 +1,3 @@
+decoder,p,p_loss,loss_mode,seed,shots,stop_nconv,fail_x,fail_z,failed_pairs,ler_per_cycle,mean_ms,p50_ms,p99_ms,max_ms,logical_agreement,cpu_only_wrong,gpu_only_wrong,sign_p
+cpu,0.003,0,unaware,8,1000,5,0,0,0,0.0,46.22598004199892,31.896548000020175,303.40198186001135,699.1239919999543,1.0,0,0,1.0
+gpu,0.003,0,unaware,8,1000,5,0,0,0,0.0,13.9781927030013,9.514011500016295,100.92989327992993,464.70805799998516,1.0,0,0,1.0
