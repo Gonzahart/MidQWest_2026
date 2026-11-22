@@ -123,9 +123,12 @@ def compare(features, failed, seconds, iterations, model, budget):
     return rows, wins, losses, p_value
 
 
-def live_compare(args, model):
+def live_compare(args, model, *, policy=None):
     """Score the trained policy in one live first-stage/fallback pass on held-out shots."""
-    center, scale, weights, _, thresholds = model
+    if policy is None:
+        center, scale, weights, _, thresholds = model
+    else:
+        thresholds = policy["thresholds"]
     fails, elapsed, fallback_counts = [], [], []
     datasets = problems(args.p, 0, args.test_shots, args.test_seed, False)
     for basis, (H, L, priors, detectors, observables) in enumerate(datasets):
@@ -135,8 +138,16 @@ def live_compare(args, model):
         def route(syndrome, result):
             error = np.asarray(result.decoding, dtype=np.uint8)
             feature = relay_features(result, error, priors, syndrome)
-            logit = ((feature - center) / scale) @ weights[1:] + weights[0]
-            return logit >= thresholds[basis]
+            if policy is None:
+                logit = ((feature - center) / scale) @ weights[1:] + weights[0]
+                return logit >= thresholds[basis]
+
+            values = np.r_[feature, result.iterations]
+            if policy["kind"] == "logistic":
+                logit = (values - policy["center"]) / policy["scale"] @ policy["weights"] + policy["intercept"]
+            else:
+                logit = policy["estimator"].predict_proba(values[None, :])[0, 1]
+            return logit > thresholds[basis]
 
         decoder = HierarchicalDecoder(first, second, route)
         failed, seconds = score(decoder.decode, L, detectors, observables)

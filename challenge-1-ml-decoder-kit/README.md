@@ -188,3 +188,32 @@ done
 
 The live row includes feature extraction, inference, and fallback in each
 decode call. Run these commands sequentially on an idle benchmark machine.
+
+### Calibrated lower-budget Relay-BP router
+
+Use the seed-1 Relay-BP-1 archive and a Relay-BP-5 subset sampled from the
+original 20,000-pair batch. A separate 10,000-shot Stim sampling call can
+produce different shots even with the same seed. Supply a distinct
+Relay-BP-1 calibration cache at the test noise rate and use seed 2 only for
+held-out comparison. Prefer calibration seeds 4 or higher to keep both basis
+seeds disjoint from the test batch.
+
+To generate a fresh matched training set on one machine, run
+`python collect_rescue_labels.py --out /tmp/local_rescue_training` and use
+its two archives together. The generator only runs fallback on failed
+first-stage shots. The fallback archive has an evaluation mask and is
+restricted to training labels.
+
+```bash
+python train_router.py --train "$TRAIN_RELAY1" --train-relay5 "$TRAIN_RELAY5" \
+  --calibration "$CALIBRATION_RELAY1" --test-relay1 "$TEST_RELAY1" \
+  --test-relay5 "$TEST_RELAY5" --budgets 0.01 0.02 --save-models \
+  --out results/router_rescue_p004
+```
+
+Use the achieved escalation rate in the CSV. Random-matched rows preserve
+the corresponding policy's exact escalation counts in X and Z. To measure
+the selected model live, pass its trusted trainer-generated `.joblib` file
+to `benchmark_timing.py --live-model`, use the rate at which it was
+calibrated, and use a fresh seed for both the live policy and its baseline
+timings.

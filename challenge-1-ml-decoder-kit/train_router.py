@@ -17,6 +17,9 @@ scores, so nothing is tuned on the test set. Baselines at each budget: random ro
 rule (not converged first, then most iterations). Also reported: relay-BP-1 alone, relay-BP-5 alone
 and the perfect router (escalate exactly relay-BP-1's wrong shots; an upper bound, not a result).
 
+Optional calibration sets basis-specific thresholds. Matched Relay-BP-5 training shots
+switch the positive label to a first-stage failure rescued by Relay-BP-5.
+
 Outputs: <out>.csv (one row per policy and budget), <out>.png (error rate vs mean time) and
 <out>_decisions_<model>_<budget>.npz in the format router_report.py --decisions expects
 (shot, basis, route + run metadata). Replay times exclude feature extraction and router inference.
@@ -26,15 +29,17 @@ import csv
 import glob
 
 import numpy as np
+from scipy.stats import rankdata
 
 from decoders import per_cycle_rate
 
-FEATURES = ["converged", "weight", "loglik", "syndrome_weight", "posterior_abs_mean", "posterior_abs_p10",
-            "iterations"]
+from sweep import ROUTER_FEATURE_NAMES
+
+FEATURES = list(ROUTER_FEATURE_NAMES)
 META = ("p", "p_loss", "seed", "shots", "cycles", "stim_version")
 
 
-def load(patterns, decoder):
+def load(patterns, decoder, *, allow_partial_labels=False):
     """Merge shards of one sweep run: (meta, shot ids, fail [n,2], seconds [n,2], X [n,2,f])."""
     paths = sorted(set(sum((glob.glob(p) for p in patterns), [])))
     if not paths:
@@ -52,6 +57,12 @@ def load(patterns, decoder):
     if len(np.unique(idx)) != len(idx):
         raise SystemExit(f"{decoder}: duplicate shot ids across shards")
     fail = np.concatenate([d["fail"] for d in parts])[order]
+    if any("evaluated" in d for d in parts):
+        if not allow_partial_labels:
+            raise SystemExit(f"{decoder}: partially evaluated archives are for rescue training only")
+        evaluated = np.concatenate([d["evaluated"] if "evaluated" in d
+                                    else np.ones_like(d["fail"]) for d in parts])[order]
+        fail = np.ma.array(fail, mask=~evaluated)
     secs = np.concatenate([d["seconds"] for d in parts])[order]
     feats = None
     if "features" in parts[0] and parts[0]["features"].shape[-1] >= 6:
@@ -101,9 +112,7 @@ class Boosted:
 
 
 def auroc(score, y):
-    order = np.argsort(score)
-    ranks = np.empty(len(score))
-    ranks[order] = np.arange(1, len(score) + 1)
+    ranks = rankdata(score)
     pos = y.astype(bool)
     if pos.sum() == 0 or pos.sum() == len(y):
         return float("nan")
@@ -121,6 +130,9 @@ def replay(route, r1, r5, cycles):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--train", nargs="+", required=True, help="relay1 sweep files, training seed")
+    ap.add_argument("--train-relay5", nargs="+", help="matched Relay-BP-5 subset for rescue labels")
+    ap.add_argument("--calibration", nargs="+", help="separate Relay-BP-1 cache at the test noise level")
+    ap.add_argument("--save-models", action="store_true", help="export trained models and locked thresholds")
     ap.add_argument("--test-relay1", nargs="+", required=True)
     ap.add_argument("--test-relay5", nargs="+", required=True)
     ap.add_argument("--budgets", type=float, nargs="+", default=[0.005, 0.01, 0.02, 0.05, 0.1, 0.2])
@@ -128,7 +140,7 @@ def main():
     ap.add_argument("--random-seed", type=int, default=1)
     args = ap.parse_args()
 
-    tr_meta, _, tr_fail, _, tr_feats = load(args.train, "relay1")
+    tr_meta, tr_idx, tr_fail, _, tr_feats = load(args.train, "relay1")
     te_meta, te_idx, f1, s1, te_feats = load(args.test_relay1, "relay1")
     m5, idx5, f5, s5, _ = load(args.test_relay5, "relay5")
     if tr_feats is None or te_feats is None:
@@ -138,12 +150,45 @@ def main():
     if {k: te_meta[k] for k in ("p", "p_loss", "seed", "shots")} != {k: m5[k] for k in ("p", "p_loss", "seed", "shots")} \
             or not np.array_equal(te_idx, idx5):
         raise SystemExit("relay1 and relay5 test files must cover the same shots (same p, seed, shots)")
+    for key in ("cycles", "stim_version"):
+        if te_meta.get(key) != m5.get(key):
+            raise SystemExit(f"Relay-BP test caches differ in {key}")
+    train_labels = tr_fail
+    if args.train_relay5:
+        train5_meta, train5_idx, train5_fail, _, _ = load(args.train_relay5, "relay5", allow_partial_labels=True)
+        if train5_meta != tr_meta:
+            raise SystemExit("rescue labels require the original training sample batch metadata, including total shots")
+        positions = np.searchsorted(tr_idx, train5_idx)
+        if not len(positions) or (positions >= len(tr_idx)).any() or not np.array_equal(tr_idx[positions], train5_idx):
+            raise SystemExit("Relay-BP-5 training shot IDs are not a subset of Relay-BP-1 training IDs")
+        tr_feats = tr_feats[positions]
+        if np.any(tr_fail[positions] & np.ma.getmaskarray(train5_fail)):
+            raise SystemExit("a failed Relay-BP-1 training shot is missing its fallback label")
+        train_labels = tr_fail[positions] & ~np.ma.filled(train5_fail, False)
+
+    calibration_feats = tr_feats
+    calibration_seed = tr_meta["seed"]
+    if args.calibration:
+        cal_meta, _, _, _, calibration_feats = load(args.calibration, "relay1")
+        if calibration_feats is None:
+            raise SystemExit("calibration cache lacks router features")
+        if cal_meta["seed"] in (tr_meta["seed"], te_meta["seed"]):
+            raise SystemExit("calibration must use a different base seed from train and test")
+        for key in ("p", "p_loss", "cycles", "stim_version"):
+            if cal_meta.get(key) != te_meta.get(key):
+                raise SystemExit(f"calibration and test caches differ in {key}")
+        calibration_seed = cal_meta["seed"]
+        if abs(calibration_seed - te_meta["seed"]) == 1:
+            print("Calibration and test share one numeric seed across opposite bases; "
+                  "thresholds are calibrated within each basis.")
     cycles = int(te_meta.get("cycles", 12))
     r1, r5 = dict(fail=f1, secs=s1), dict(fail=f5, secs=s5)
 
-    x_tr, y_tr = flat(tr_feats, tr_fail)
+    x_tr, y_tr = flat(tr_feats, train_labels)
+    if not y_tr.any() or y_tr.all():
+        raise SystemExit("training labels must contain both classes")
     x_te, y_te = flat(te_feats, f1)
-    print(f"train: {len(y_tr)} basis shots, {int(y_tr.sum())} relay-BP-1 errors (p={tr_meta['p']}, seed {tr_meta['seed']})")
+    print(f"train: {len(y_tr)} basis shots, {int(y_tr.sum())} positive labels (p={tr_meta['p']}, seed {tr_meta['seed']})")
     print(f"test:  {len(y_te)} basis shots, {int(y_te.sum())} relay-BP-1 errors (p={te_meta['p']}, seed {te_meta['seed']})")
 
     models = {"logistic": Logistic().fit(x_tr, y_tr)}
@@ -169,17 +214,46 @@ def main():
         rows.append(dict(policy=name, budget="", auroc="", **row))
 
     rng = np.random.default_rng(args.random_seed)
+    matched_rng = np.random.default_rng(args.random_seed)
     scorers = {n: m.score for n, m in models.items()} | {"simple rule": rule}
+    if args.calibration:
+        simple_scores = rule(x_te).reshape(shape)
+        tie_breaks = np.random.default_rng(args.random_seed).random(shape)
+        simple_ranks = np.argsort(np.lexsort((tie_breaks, -simple_scores), axis=0), axis=0)
     for name, scorer in scorers.items():
-        s_tr, s_te = scorer(x_tr), scorer(x_te)
-        auc = auroc(s_te, y_te)
+        s_cal = scorer(flat(calibration_feats)).reshape(calibration_feats.shape[:2])
+        s_te = scorer(x_te).reshape(shape)
+        auc = auroc(s_te.ravel(), y_te)
         for budget in args.budgets:
-            thr = np.quantile(s_tr, 1 - budget)          # threshold fixed on training scores
-            route = (s_te > thr).reshape(shape)
+            thresholds = (np.quantile(s_cal, 1 - budget, axis=0) if args.calibration
+                          else np.repeat(np.quantile(s_cal, 1 - budget), 2))
+            route = s_te > thresholds
             rows.append(dict(policy=name, budget=budget, auroc=round(auc, 4), **replay(route, r1, r5, cycles)))
+            # Shuffle each basis separately to preserve its realized escalation count.
+            matched = np.column_stack([matched_rng.permutation(column) for column in route.T])
+            rows.append(dict(policy=f"random matched to {name}", budget=budget, auroc="",
+                             **replay(matched, r1, r5, cycles)))
             if name in models:
+                controls = {"random_route": matched}
+                if args.calibration:
+                    # Offline baseline at the learned policy's exact realized count.
+                    simple_matched = simple_ranks < route.sum(axis=0)
+                    controls["simple_route"] = simple_matched
+                    rows.append(dict(policy=f"simple matched to {name}", budget=budget, auroc="",
+                                     **replay(simple_matched, r1, r5, cycles)))
                 np.savez_compressed(f"{args.out}_decisions_{name}_{budget}.npz", shot=te_idx, basis=np.asarray(["X", "Z"]),
-                                    route=route, **{k: te_meta[k] for k in META if k in te_meta})
+                                    route=route, **controls, **{k: te_meta[k] for k in META if k in te_meta})
+                if args.save_models:
+                    from joblib import dump
+
+                    candidate = models[name]
+                    scorer_state = ({"center": candidate.mu, "scale": candidate.sd,
+                                     "weights": candidate.w, "intercept": candidate.b}
+                                    if name == "logistic" else {"estimator": candidate.m})
+                    dump(dict(kind=name, features=FEATURES, thresholds=thresholds,
+                              train_seed=tr_meta["seed"], calibration_seed=calibration_seed,
+                              p=te_meta["p"], p_loss=te_meta["p_loss"], budget=budget,
+                              **scorer_state), f"{args.out}_model_{name}_{budget}.joblib")
     for budget in args.budgets:
         k = int(round(budget * f1.size))
         flat_route = np.zeros(f1.size, bool)
@@ -187,7 +261,7 @@ def main():
         rows.append(dict(policy="random", budget=budget, auroc="", **replay(flat_route.reshape(shape), r1, r5, cycles)))
 
     with open(f"{args.out}.csv", "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()
         w.writerows(rows)
     print(f"\n{'policy':30s} {'budget':>6s} {'AUROC':>6s} {'esc':>6s} {'fail':>5s} {'LER/cycle':>9s} {'+-':>8s} {'mean ms':>8s}")

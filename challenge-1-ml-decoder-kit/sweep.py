@@ -89,6 +89,7 @@ class Reweighted:
 
 
 FEATURE_NAMES = ("converged", "weight", "loglik", "syndrome_weight", "posterior_abs_mean", "posterior_abs_p10")
+ROUTER_FEATURE_NAMES = (*FEATURE_NAMES, "iterations")
 
 
 def relay_features(result, error, priors, syndrome):
