@@ -238,3 +238,22 @@ the circuit and compared the flipped check detectors and logicals with the decod
 - The projection onto check rows (Reweighted) drops 1,728 herald-only columns per basis; none flips a logical.
 - Sizes: with heralds, H is 2,664 rows (936 check + 1,728 herald) x 12,240 columns, 39,312 nonzeros. Projected
   (what reweight decodes): 936 rows x 10,512 columns. Kit no-loss problem: 936 x 8,784.
+
+## Router vs random decoder choice at equal mean time (Sun ~2 AM)
+"Coin flip" = for each X/Z pair choose relay-BP-1 or relay-BP-5 at random *before* decoding, with the probability set so
+the mean time equals the router's (2,000 random draws; mean and 95% range of failed pairs). This is a fairer baseline
+than escalating random shots, which pays relay-BP-1 first. Replay times, 20-worker caches: compare within a row only.
+
+| p | Test data | Router (locked policy) | Esc. | Router failed pairs / mean ms / p99 | Coin flip at same mean | Simple rule, same esc. |
+|---|---|---|---:|---|---|---|
+| 0.003 | seed 2, 50k pairs, seed-4 calibration | boosted 2% | 1.3% | 47 / 54 / – | 52.4 (48–57), p99 468 | 48 |
+| 0.004 | seed 2, 10k (Sena's selection) | boosted 2% | 2.0% | 122 / 322 / 10,840 | 122.8 (113–133), p99 6,089 | 125 |
+| 0.004 | seed 4 validation, 10k | logistic | 7.4% | 98 / 469 / 11,430 | 97.4 (88–106), p99 9,456 | 88 (16%) |
+| **0.005** | **seed 10, fresh, 10k; rule fixed in advance** | **logistic 2%** | **2.2%** | **851 / 1,441 / 19,233** | **903.5 (884–924), p99 10,378** | **847** |
+
+Reading: at p = 0.005 escalation beats random decoder choice by ~50 failed pairs (~6%) at equal mean time, on fresh
+data with the policy fixed beforehand; at 0.003 it is marginally better; at 0.004 it ties. The learned model ties the
+simple rule (not converged first, then most iterations) everywhere, and p99 is always worse than random choice, because
+escalated shots are the slowest ones and pay for both decoders. Note: boosted with seed-4 calibration at p = 0.005
+escalated 0% (threshold above every test score), so the pre-registered logistic policy is the one reported.
+CSVs: `router_fresh_s10_p0.005.csv`, `router_calibrated_s2_p0.003.csv`. Coin flip: `python router_coinflip.py <relay1 file> <relay5 file> <router mean ms>`.
