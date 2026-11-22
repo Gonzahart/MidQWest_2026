@@ -41,8 +41,21 @@ def cpu_model():
     return platform.processor() or platform.machine()
 
 
-def load_live_model(path, seed):
+def load_live_model(path, seed, p=None):
     from relay_router_pilot import FEATURES
+
+    if path.suffix == ".joblib":
+        from joblib import load
+
+        # Load only model files created by the team trainer.
+        policy = load(path)
+        if policy["features"] != [*FEATURES, "iterations"] or policy["kind"] not in ("logistic", "boosted"):
+            raise ValueError("model features or type do not match the integrated router")
+        if policy["p"] != p or policy["p_loss"] != 0:
+            raise ValueError("model thresholds were calibrated at different noise settings")
+        if policy["train_seed"] == seed or policy["calibration_seed"] == seed:
+            raise ValueError("timing seed must differ from training and calibration base seeds")
+        return policy
 
     with np.load(path) as artifact:
         if artifact["feature_names"].tolist() != list(FEATURES):
@@ -59,7 +72,8 @@ def measure(job):
     if decoder == "live-relay":
         from relay_router_pilot import live_compare
 
-        result = live_compare(args, args.model)
+        result = (live_compare(args, None, policy=args.model) if isinstance(args.model, dict)
+                  else live_compare(args, args.model))
         row = dict(fail_x=result["failed_x"], fail_z=result["failed_z"],
                    failed_pairs=result["failed_pairs"], ler_per_cycle=result["ler_per_cycle"],
                    mean_ms=result["mean_ms"], p99_ms=result["p99_ms"],
@@ -86,7 +100,7 @@ def main():
     parser.add_argument("--shots", type=int, default=30)
     parser.add_argument("--seed", type=int, default=2)
     parser.add_argument("--decoders", nargs="+", default=DEFAULT_DECODERS)
-    parser.add_argument("--live-model", type=Path, help="trained NPZ from the live integration")
+    parser.add_argument("--live-model", type=Path, help="trusted trained NPZ or joblib from the team trainer")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
     if sys.platform != "darwin" and not sys.platform.startswith("linux"):
@@ -101,7 +115,7 @@ def main():
             parser.error("live-relay requires --live-model and zero qubit loss")
         try:
             from relay_router_pilot import live_compare  # verify teammate integration is present
-            args.model = load_live_model(args.live_model, args.seed)
+            args.model = load_live_model(args.live_model, args.seed, args.p)
         except (ImportError, KeyError, ValueError, OSError) as error:
             parser.error(f"cannot load live router: {error}")
         args.test_shots, args.test_seed = args.shots, args.seed
