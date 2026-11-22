@@ -61,3 +61,36 @@ The pilot gives no evidence of an accuracy gain over the simple rule. The mean
 latency difference needs a larger held-out sample and live timing.
 
 [Summary CSV](relay_router_pilot_p005.csv) · [Pilot cache](relay_router_pilot_p005.npz)
+
+## Larger held-out Relay-BP-1 routing replay
+
+Physical error rate 0.005, no loss, 2,000 training pairs and 2,000 held-out
+pairs. Train X/Z seeds were 41/42; held-out X/Z seeds were 2/3. This scales up
+the pilot with the same seeds and features. Training had 75 basis shots where
+Relay-BP-5 rescued Relay-BP-1. Both learned and simple rules used a fixed 20%
+fallback rate in each basis. The replay ran on an arm64 Mac with 10 workers.
+
+```bash
+OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 \
+  python relay_router_pilot.py --p 0.005 --train-shots 2000 --test-shots 2000 \
+  --train-seed 41 --test-seed 2 --workers 10 --fallback-rate 0.20 \
+  --out /tmp/relay_router_scaleup_p005
+```
+
+| Policy | Failed pairs | LER / cycle | Mean ms | p99 ms |
+|---|---:|---:|---:|---:|
+| Relay-BP-1 | 173 | 7.51e-3 | 374 | 3,866 |
+| Relay-BP-5 | 137 | 5.90e-3 | 890 | 4,759 |
+| Simple rule | 144 | 6.21e-3 | 1,038 | 7,826 |
+| Learned | 152 | 6.57e-3 | 956 | 7,561 |
+| Matched random | 176 | 7.65e-3 | 560 | 7,032 |
+
+The learned router saved 7.8% mean replay time against the simple rule and
+failed eight additional pairs. The learned rule won four discordant pairs
+and the simple rule won 12 (exact paired p = 0.0768). Relay-BP-5 alone had
+fewer failures, lower mean latency, and lower p99 than the learned router in
+this run. These results do not support expanding the current policy to a
+live three-rate benchmark. Replay latency excludes feature extraction and
+inference.
+
+[Summary CSV](relay_router_scaleup_p005.csv) · [Replay cache](relay_router_scaleup_p005.npz)
