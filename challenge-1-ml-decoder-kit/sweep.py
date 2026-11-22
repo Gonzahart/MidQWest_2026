@@ -135,6 +135,20 @@ class Reweighted:
         out[~fired.astype(bool) & (rng.random(out.size) < self.flag_fp * self.p_loss)] = True
         return out
 
+    def decode_detailed(self, syndrome_full, flags_from=None, shot=0):
+        """Relay-BP result object (for router features), plus loss features of this shot in self.loss_feats."""
+        source = syndrome_full if flags_from is None else flags_from
+        fired = self.noisy(source[self.herald_rows], shot)
+        p = self.priors_for(fired)
+        self.decoder = build(self.name, self.H, p)
+        s = syndrome_full[self.check_rows]
+        result = self.decoder.decode_detailed(s)
+        self.last_priors = p
+        hit = np.asarray(self.herald[np.flatnonzero(fired)].sum(axis=0)).ravel() > 0   # columns of fired flags
+        lit = np.asarray(self.H[:, hit].T @ s).ravel() > 0                            # ...touching a lit check
+        self.loss_feats = (float(np.sum(fired)), float(hit.sum()), float(lit.sum()))
+        return result
+
     def decode(self, syndrome_full, flags_from=None, shot=0):
         source = syndrome_full if flags_from is None else flags_from
         p = self.priors_for(self.noisy(source[self.herald_rows], shot))
@@ -147,6 +161,7 @@ class Reweighted:
 
 FEATURE_NAMES = ("converged", "weight", "loglik", "syndrome_weight", "posterior_abs_mean", "posterior_abs_p10")
 ROUTER_FEATURE_NAMES = (*FEATURE_NAMES, "iterations")
+LOSS_FEATURE_NAMES = ("flags_fired", "flag_columns", "flag_columns_on_lit_checks")
 
 
 def relay_features(result, error, priors, syndrome):
@@ -188,6 +203,7 @@ def work(job):
     secs = np.zeros((len(idx), 2))
     iters = np.zeros((len(idx), 2), np.int32)
     feats = np.full((len(idx), 2, len(FEATURE_NAMES)), np.nan)
+    lfeats = np.full((len(idx), 2, len(LOSS_FEATURE_NAMES)), np.nan)
     for b, (H, L, priors, det, obs, is_herald) in enumerate(problems(args)):
         reweight = args.loss_mode in ("reweight", "blind", "shuffled") and args.p_loss > 0
         if reweight:
@@ -202,7 +218,11 @@ def work(job):
             if reweight:
                 # shuffled control: flags from another shot (fixed derangement k -> k + shots//2)
                 other = det[(k + args.shots // 2) % args.shots] if args.loss_mode == "shuffled" else None
-                error, iters[j, b] = np.asarray(rw.decode(det[k], flags_from=other, shot=k), np.uint8), -1
+                if args.decoder.startswith("relay"):
+                    result = rw.decode_detailed(det[k], flags_from=other, shot=k)
+                    error, iters[j, b] = np.asarray(result.decoding, np.uint8), int(result.iterations)
+                else:
+                    error, iters[j, b] = np.asarray(rw.decode(det[k], flags_from=other, shot=k), np.uint8), -1
             else:
                 if args.decoder.startswith("relay"):
                     result = decoder.decode_detailed(det[k])
@@ -213,7 +233,10 @@ def work(job):
             fail[j, b] = ((L @ error) % 2 != obs[k]).any()
             if args.decoder.startswith("relay") and not reweight:
                 feats[j, b] = relay_features(result, error, priors, det[k])
-    return idx, fail, secs, iters, feats
+            elif args.decoder.startswith("relay"):
+                feats[j, b] = relay_features(result, error, rw.last_priors, det[k][rw.check_rows])
+                lfeats[j, b] = rw.loss_feats
+    return idx, fail, secs, iters, feats, lfeats
 
 
 def run(args):
@@ -228,11 +251,12 @@ def run(args):
     start = time.time()
     with Pool(args.workers) as pool:
         parts = pool.map(work, [(args, c) for c in chunks])
-    idx, fail, secs, iters, feats = (np.concatenate(x) for x in zip(*parts))
+    idx, fail, secs, iters, feats, lfeats = (np.concatenate(x) for x in zip(*parts))
     np.savez_compressed(path, decoder=args.decoder, p=args.p, p_loss=args.p_loss, loss_mode=args.loss_mode,
                         seed=args.seed, shots=args.shots, shard=args.shard, nshards=args.nshards,
                         shot_idx=idx, fail=fail, seconds=secs, iterations=iters, features=feats,
                         feature_names=np.asarray(FEATURE_NAMES), host=platform.node(),
+                        loss_features=lfeats, loss_feature_names=np.asarray(LOSS_FEATURE_NAMES),
                         workers=args.workers, cycles=CYCLES, basis=np.asarray(["X", "Z"]),
                         stim_version=stim.__version__, tag=args.tag,
                         relay_overrides=json.dumps(parse_overrides(args.relay_overrides), default=list),

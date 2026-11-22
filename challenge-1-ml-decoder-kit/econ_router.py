@@ -27,7 +27,10 @@ def load(path):
     o = np.argsort(d["shot_idx"])
     X = d["features"][o]
     it = d["iterations"][o].astype(float)
-    return dict(fail=d["fail"][o].astype(bool), t=d["seconds"][o] * 1e3, X=np.concatenate([X, it[..., None]], -1),
+    parts = [X, it[..., None]]
+    if "loss_features" in d.files and not np.isnan(d["loss_features"]).all():
+        parts.append(d["loss_features"][o])                    # flags fired, their columns, columns on lit checks
+    return dict(fail=d["fail"][o].astype(bool), t=d["seconds"][o] * 1e3, X=np.concatenate(parts, -1),
                 host=str(d["host"]), it=it)
 
 
