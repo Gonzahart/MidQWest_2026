@@ -9,6 +9,8 @@ Also writes a CSV next to the PNG with every point and its error bar.
 import argparse
 import csv
 import glob
+import os
+import re
 
 import matplotlib
 matplotlib.use("Agg")
@@ -23,19 +25,33 @@ STYLE = {"unaware": ("--", "o", "loss ignored"), "reweight": ("-", "s", "loss-re
 
 
 def load(patterns):
-    groups = {}
+    """One row per (decoder, p, p_loss, mode, seed). Shards of one run (same requested shot count and host)
+    are merged; when several runs exist for the same point, the largest is used and the others are listed
+    as skipped, so a 2k and a 20k run with the same seed are never silently mixed. Shot indices must be
+    complete and unique."""
+    runs = {}
     for path in sorted(set(sum((glob.glob(g) for g in patterns), []))):
         d = np.load(path)
         mode = str(d["loss_mode"]) if float(d["p_loss"]) > 0 else "none"
-        key = (str(d["decoder"]), float(d["p"]), float(d["p_loss"]), mode, int(d["seed"]))
-        groups.setdefault(key, []).append(d)
+        m = re.search(r"_n(\d+)_shard", os.path.basename(path))
+        n = int(m.group(1)) if m else len(d["shot_idx"])
+        host = str(d["host"]) if "host" in d.files else "unknown"
+        point = (str(d["decoder"]), float(d["p"]), float(d["p_loss"]), mode, int(d["seed"]))
+        runs.setdefault(point, {}).setdefault((n, host), []).append((path, d))
     rows = []
-    for (dec, p, pl, mode, seed), parts in groups.items():
-        fail = np.concatenate([d["fail"] for d in parts])
-        ms = np.concatenate([d["seconds"] for d in parts]).sum(axis=1) * 1e3
+    for (dec, p, pl, mode, seed), by_run in runs.items():
+        (n, host), parts = max(by_run.items(), key=lambda kv: kv[0][0])
+        idx = np.concatenate([d["shot_idx"] for _, d in parts])
+        if len(idx) != n or len(np.unique(idx)) != n:
+            raise SystemExit(f"incomplete or overlapping shards for {dec} p={p} p_loss={pl} {mode} seed {seed} n={n}")
+        fail = np.concatenate([d["fail"] for _, d in parts])
+        ms = np.concatenate([d["seconds"] for _, d in parts]).sum(axis=1) * 1e3
         rate, err = per_cycle_rate(fail.any(axis=1), CYCLES)
+        skipped = [os.path.basename(f) for k, v in by_run.items() if k != (n, host) for f, _ in v]
         rows.append(dict(decoder=dec, p=p, p_loss=pl, mode=mode, seed=seed, shots=len(fail),
-                         failed_pairs=int(fail.any(axis=1).sum()), ler=rate, ler_err=err, mean_ms=ms.mean()))
+                         failed_pairs=int(fail.any(axis=1).sum()), ler=rate, ler_err=err, mean_ms=ms.mean(),
+                         host=host, files=" ".join(os.path.basename(f) for f, _ in parts),
+                         skipped=" ".join(skipped)))
     return rows
 
 

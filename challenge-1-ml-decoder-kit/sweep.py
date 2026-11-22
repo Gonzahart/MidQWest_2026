@@ -15,7 +15,8 @@ different machines can be merged into one result, and every decoder sees identic
 Decoders: bposd (kit settings), relay5 (kit relay-BP, stop_nconv=5), relay1 (stop_nconv=1), bp (plain
 min-sum BP, 80 iterations). With --p-loss > 0, --loss-mode chooses how loss flags are used:
 unaware (ignored), rows (flags as extra rows of H)
-or reweight (per-shot priors from the flags: fired -> P(column | loss), 1/2 when Y and Z merge; unfired -> ~0; H keeps the kit size). Output: results/<name>_shard<i>of<n>.npz with
+blind / shuffled (controls for reweight: same projected graph and per-shot rebuild, but priors ignore the
+flags / use another shot's flags), or reweight (per-shot priors from the flags: fired -> P(column | loss), 1/2 when Y and Z merge; unfired -> ~0; H keeps the kit size). Output: results/<name>_shard<i>of<n>.npz with
 shot indices, fail [X, Z], seconds [X, Z] and, for relay/bp, iterations [X, Z].
 Each worker process decodes single-threaded; --workers defaults to all cores.
 """
@@ -54,7 +55,8 @@ class Reweighted:
     left maximally mixed), columns of UNFIRED flags get ~0, all others keep their DEM prior. Decodes on
     the check rows only, so H stays the kit's size. BP-OSD updates priors in place; relay-BP is rebuilt."""
 
-    def __init__(self, name, H_full, priors, is_herald, p_loss):
+    def __init__(self, name, H_full, priors, is_herald, p_loss, control="reweight"):
+        self.control = control
         H_full = H_full.tocsr()
         self.check_rows, self.herald_rows = np.flatnonzero(~is_herald), np.flatnonzero(is_herald)
         H_check, H_herald = H_full[self.check_rows].tocsc(), H_full[self.herald_rows].tocsc()
@@ -68,14 +70,17 @@ class Reweighted:
         self.decoder = build(name, self.H, self.priors)
 
     def priors_for(self, fired):
+        if self.control == "blind":
+            return self.priors.copy()  # unconditional DEM priors: herald identity ignored, same graph
         p = self.priors.copy()
         p[self.has_herald] = 1e-9
         hit = np.asarray(self.herald[np.flatnonzero(fired)].sum(axis=0)).ravel() > 0
         p[hit] = self.given_loss[hit]
         return p
 
-    def decode(self, syndrome_full):
-        p = self.priors_for(syndrome_full[self.herald_rows])
+    def decode(self, syndrome_full, flags_from=None):
+        source = syndrome_full if flags_from is None else flags_from
+        p = self.priors_for(source[self.herald_rows])
         if self.name == "bposd":
             self.decoder.update_channel_probs(p)
         else:
@@ -109,7 +114,7 @@ def problems(args):
     for k, basis in enumerate("XZ"):
         circuit = lossy_circuit(basis, args.p, args.p_loss)
         det, obs = sample(circuit, args.shots, args.seed + k)
-        use_heralds = args.loss_mode in ("rows", "reweight") and args.p_loss > 0
+        use_heralds = args.loss_mode in ("rows", "reweight", "blind", "shuffled") and args.p_loss > 0
         H, L, priors, ids = lossy_dem_matrices(circuit, basis, use_heralds)
         coords = circuit.get_detector_coordinates()
         is_herald = np.array([coords[d][0] == HERALD_COORDINATE for d in ids])
@@ -124,16 +129,18 @@ def work(job):
     iters = np.zeros((len(idx), 2), np.int32)
     feats = np.full((len(idx), 2, len(FEATURE_NAMES)), np.nan)
     for b, (H, L, priors, det, obs, is_herald) in enumerate(problems(args)):
-        reweight = args.loss_mode == "reweight" and args.p_loss > 0
+        reweight = args.loss_mode in ("reweight", "blind", "shuffled") and args.p_loss > 0
         if reweight:
-            rw = Reweighted(args.decoder, H, priors, is_herald, args.p_loss)
+            rw = Reweighted(args.decoder, H, priors, is_herald, args.p_loss, control=args.loss_mode)
             L = L.tocsc()[:, rw.keep]
         else:
             decoder = build(args.decoder, H, priors)
         for j, k in enumerate(idx):
             t = time.perf_counter()
             if reweight:
-                error, iters[j, b] = np.asarray(rw.decode(det[k]), np.uint8), -1
+                # shuffled control: flags from another shot (fixed derangement k -> k + shots//2)
+                other = det[(k + args.shots // 2) % args.shots] if args.loss_mode == "shuffled" else None
+                error, iters[j, b] = np.asarray(rw.decode(det[k], flags_from=other), np.uint8), -1
             else:
                 if args.decoder.startswith("relay"):
                     result = decoder.decode_detailed(det[k])
@@ -196,7 +203,7 @@ def main():
     r.add_argument("--decoder", choices=["bposd", "relay5", "relay1", "bp"], required=True)
     r.add_argument("--p", type=float, default=0.004)
     r.add_argument("--p-loss", type=float, default=0.0)
-    r.add_argument("--loss-mode", choices=["unaware", "rows", "reweight"], default="unaware")
+    r.add_argument("--loss-mode", choices=["unaware", "rows", "reweight", "blind", "shuffled"], default="unaware")
     r.add_argument("--shots", type=int, default=10000)
     r.add_argument("--seed", type=int, default=2, help="2 = test seed; use 1 only for router training data")
     r.add_argument("--shard", type=int, default=0)

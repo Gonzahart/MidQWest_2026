@@ -196,3 +196,31 @@ Seed 2, 2,000 pairs per point, 8 workers. "Fixed / broken" = pairs where only th
   1% loss, reweighted BP-OSD (4.6e-4) is back at its no-loss value (4.8e-4).
 - **Timing caveat:** reweighted BP-OSD was slower in these runs (mean +20-50%, p99 up to 2.7x), likely because OSD
   runs more often with sharp priors. Relay-BP-5 showed no consistent slowdown. Check in the single-worker timing.
+
+## Herald control: is the gain from the flags themselves? (Sat ~11:45 PM)
+relay-BP-5, p = 0.004, 1% loss, seed 5 (fresh), 1,000 pairs per arm, all arms on one machine (2-core cloud VM)
+and the same sampled shots. `reweight`, `blind` and `shuffled` use the same projected graph (kit-size H) and
+the same per-shot relay rebuild; they differ only in the priors:
+- `reweight`: fired flags -> prior/p_loss (≈ 1/2), unfired -> ~0 (our method)
+- `blind`: unconditional DEM priors, herald identity ignored (controls for the graph change and the rebuild)
+- `shuffled`: our rule, but with the flag pattern of a different shot (k -> k + 500)
+- `unaware`: the kit-style DEM with heralds dropped (the "loss ignored" baseline in the sweep)
+
+| Arm | Failed pairs | LER/cycle | Arm-only / reweight-only failures | Exact paired p | Mean ms | p99 ms |
+|---|---:|---:|---:|---:|---:|---:|
+| reweight | 8 | 6.7e-4 | – | – | 386 | 5,981 |
+| unaware | 42 | 3.6e-3 | 36 / 2 | 5e-9 | 828 | 6,078 |
+| shuffled | 59 | 5.1e-3 | 53 / 2 | 9e-14 | 1,398 | 8,660 |
+| blind | 89 | 7.7e-3 | 84 / 3 | 1e-21 | 2,290 | 11,659 |
+
+The graph change does not explain the gain: on the same graph without flag information (`blind`) the decoder
+is *worse* than the loss-ignoring baseline, and the right flags take it from 89 to 8 failed pairs. Flags from
+the wrong shot (`shuffled`) also hurt, so the gain needs each shot's own flags. Timing is from a slow shared
+VM: compare arms with each other only. Reproduce:
+`python sweep.py run --decoder relay5 --p 0.004 --p-loss 0.01 --loss-mode {reweight,unaware,shuffled,blind} --shots 1000 --seed 5`
+
+## Plot provenance fix
+`plot_loss.py` now keeps one run per point (largest requested shot count, single host), refuses incomplete or
+overlapping shards, and writes the host, input files and skipped files into the CSV next to the PNG.
+Regenerated `loss_sweep_relay5.png/.csv` and `loss_sweep_bposd.png/.csv`: every number matches the tables
+above, except the p = 0.003 no-loss point now uses the 50k run (5.3e-5 instead of 8.3e-5 from 10k).
