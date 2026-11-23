@@ -1,6 +1,9 @@
 # ML decoders for qLDPC / Gross code – literature notes (Sat Nov 21, 3 PM)
 
-See also Sean's fuller report: [../reference/ML-decoders-for-Gross-code.pdf](../reference/ML-decoders-for-Gross-code.pdf).
+> **Snapshot (Sat Nov 21, 3 PM CT)**, written right after the challenge was revealed. Final numbers: [root README](../../README.md).
+
+
+See also Sean's fuller report: [ML-decoders-for-Gross-code.pdf](ML-decoders-for-Gross-code.pdf).
 
 | Approach | Key paper | What it shows | Fit for us (24h, laptop) |
 |---|---|---|---|

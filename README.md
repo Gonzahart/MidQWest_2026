@@ -10,6 +10,26 @@ comparison is paired on the same simulated shots; every ML test was fixed in adv
 
 🏆 **1st place, Infleqtion track, MidQWest 2026.** **Slides:** [docs/slides/MidQWest2026_Gross_code_decoding_slides.pdf](docs/slides/MidQWest2026_Gross_code_decoding_slides.pdf)
 
+## The challenge
+
+MidQWest 2026's Infleqtion track, *Qubits & Gradients*, had two challenges. We took **Challenge 1: ML-assisted QEC decoding**
+([original challenge and kit](https://github.com/Infleqtion/MidQWest-2026) · [our copy of the statement](docs/reference/INFLEQTION_CHALLENGE_README.md)).
+
+**Why it matters.** A quantum computer has to correct its own errors continuously. Every cycle it measures parity checks
+(the *syndrome*), and a classical *decoder* has to work out from those checks which errors most likely happened, fast enough
+to keep up with the hardware. Accurate decoders are slow; fast ones make more mistakes. On neutral-atom machines like Infleqtion's,
+atoms are also sometimes *lost*, and the hardware can often detect that, so a decoder can be told where a loss happened.
+
+**The task.** Use machine learning to improve an existing decoder (in accuracy, speed or handling of loss) for the
+[[144,12,12]] **Gross code**, a quantum LDPC code that stores 12 logical qubits in 144 data qubits with distance 12.
+The kit simulates 12 noisy syndrome cycles in Stim and provides two baselines: **BP-OSD** and **relay-BP**.
+
+**Required.** A sweep over physical error rates p = 0.003, 0.004 and 0.005, reporting logical error rate, decoding latency
+and resource use, and saying where the approach works and where it falls short. Deliverables: the code and reproduction
+scripts on GitHub, at least one comparison plot against the baselines, and a short presentation. Stretch goals included a
+router that decides when to call a stronger decoder, and estimating the decoder's hardware cost; we did both
+(net-benefit and truth-table routers, GPU latency).
+
 ## Approach in one paragraph
 
 Each shot's syndrome (936 parity checks per basis) is decoded by relay-BP. **Loss-aware priors:** when a data atom is lost,
@@ -48,7 +68,7 @@ Results index: [`challenge-1-ml-decoder-kit/results/README.md`](challenge-1-ml-d
 
 Limits: loss model = prompt, perfect-location heralds on data qubits at cycle start; ML router helps only at p = 0.005;
 router p99 is worse than relay-BP-5 alone (escalated shots pay both decoders). Closest prior work: Murri,
-arXiv 2610.38283 (loss-aware relay-BP on the Gross code for delayed, correlated loss; no latency reported).
+[arXiv:2610.38283](https://arxiv.org/abs/2610.38283) (loss-aware relay-BP on the Gross code for delayed, correlated loss; no latency reported); see [docs/research/prior-work-and-novelty.md](docs/research/prior-work-and-novelty.md).
 
 ## Quick start
 
@@ -112,9 +132,9 @@ Files from different machines or worker counts draw different shots: pair only m
 | `challenge-1-ml-decoder-kit/` | Infleqtion's decoder kit (`circuit.py`, `decoders.py`, `baseline.py`, `make_circuit.py`, `make_dataset.py`, `circuits/`, `test_kit.py`; see its `README.md`) plus our code |
 | `challenge-1-ml-decoder-kit/results/` | All results, one numbered folder per experiment; see its `README.md` |
 | `docs/slides/` | Final presentation (PDF) |
-| `docs/reference/` | Challenge README, Sean's handoff and research report, Fowler's surface code paper |
-| `docs/context/`, `docs/TEAM_GUIDE.md`, `docs/REVIEW_BRIEF.md` | Planning notes and the hackathon-night team guide and review brief (snapshots) |
-| `prep/` | Friday-night prep: surface code threshold baseline with Stim + PyMatching |
+| `docs/research/` | Our research reports and literature reviews, prior work and novelty, and a small benchmark; see its `README.md` |
+| `docs/reference/` | Copy of Infleqtion's challenge statement ([original](https://github.com/Infleqtion/MidQWest-2026)) |
+| `docs/Resumes/` | Team résumés |
 
 **Our code** (all in `challenge-1-ml-decoder-kit/`):
 

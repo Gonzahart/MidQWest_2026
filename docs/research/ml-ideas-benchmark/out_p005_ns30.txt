@@ -1,0 +1,9 @@
+H (936, 8784)
+r1 nonconverged 11 r1 fails among nonconverged 11 r1 time on nonconv mean ms 7034.046335090909
+capped relay nonconverged: 47 / 400  sign check frac(llr<0 where decoding=1): 1.0
+r1           fails   19/400  mean   420.43 ms  p99  8383.18  max  8928.69
+rc           fails   53/400  mean   117.70 ms  p99   894.01  max  1123.32
+rc+osd0      fails   40/400  mean   121.79 ms  p99   931.59  max  1255.65
+rc+osdcs10   fails   35/400  mean   173.81 ms  p99  1606.07  max  2009.34
+rc+lsd0      fails   40/400  mean   133.03 ms  p99  1083.87  max  1713.44
+rc+lsdcs4    fails   40/400  mean   133.17 ms  p99  1093.69  max  1894.36

@@ -1,0 +1,33 @@
+H (936, 8784)
+/tmp/bpbench/bench2.py:57: RuntimeWarning: Mean of empty slice
+  print(f"{k:12s} fails {f.sum():4d}/{n}  mean {1e3*tt.mean():8.2f} ms  p99 {1e3*np.percentile(tt,99):8.2f}  max {1e3*tt.max():8.2f}")
+/usr/local/lib/python3.13/site-packages/numpy/_core/_methods.py:142: RuntimeWarning: invalid value encountered in scalar divide
+  ret = ret.dtype.type(ret / rcount)
+capped relay nonconverged: 96 / 400  sign check frac(llr<0 where decoding=1): 1.0
+r1           fails   19/400  mean   383.03 ms  p99  5721.14  max  8773.38
+r5           fails   19/400  mean   802.65 ms  p99  7188.76  max  9025.37
+Traceback (most recent call last):
+  File "/tmp/bpbench/bench2.py", line 57, in <module>
+    print(f"{k:12s} fails {f.sum():4d}/{n}  mean {1e3*tt.mean():8.2f} ms  p99 {1e3*np.percentile(tt,99):8.2f}  max {1e3*tt.max():8.2f}")
+                                                                                   ~~~~~~~~~~~~~^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/numpy/lib/_function_base_impl.py", line 4258, in percentile
+    return _quantile_unchecked(
+        a, q, axis, out, overwrite_input, method, keepdims, weights, weak_q)
+  File "/usr/local/lib/python3.13/site-packages/numpy/lib/_function_base_impl.py", line 4522, in _quantile_unchecked
+    return _ureduce(a,
+                    func=_quantile_ureduce_func,
+    ...<6 lines>...
+                    method=method,
+                    weak_q=weak_q)
+  File "/usr/local/lib/python3.13/site-packages/numpy/lib/_function_base_impl.py", line 3892, in _ureduce
+    r = func(a, **kwargs)
+  File "/usr/local/lib/python3.13/site-packages/numpy/lib/_function_base_impl.py", line 4681, in _quantile_ureduce_func
+    result = _quantile(arr,
+                       quantiles=q,
+    ...<3 lines>...
+                       weights=wgt,
+                       weak_q=weak_q)
+  File "/usr/local/lib/python3.13/site-packages/numpy/lib/_function_base_impl.py", line 4805, in _quantile
+    slices_having_nans = np.isnan(arr[-1, ...])
+                                  ~~~^^^^^^^^^
+IndexError: index -1 is out of bounds for axis 0 with size 0

@@ -1,0 +1,11 @@
+H (936, 8784)
+capped relay nonconverged: 143 / 400  sign check frac(llr<0 where decoding=1): 1.0
+r1           fails   19/400  mean   342.25 ms  p99  5258.46  max  5383.55
+r5           fails   19/400  mean   741.74 ms  p99  5660.23  max  6003.54
+bposd        fails   11/60  mean   252.63 ms  p99   690.82  max   847.00
+bplsd        fails   87/400  mean    59.31 ms  p99   432.62  max   885.09
+rc           fails  135/400  mean    14.17 ms  p99    36.44  max    42.03
+rc+osd0      fails   82/400  mean    32.47 ms  p99   387.12  max   611.65
+rc+osdcs10   fails   63/400  mean   165.88 ms  p99   743.47  max   852.41
+rc+lsd0      fails   81/400  mean    45.06 ms  p99   349.62  max   550.69
+rc+lsdcs4    fails   81/400  mean    45.54 ms  p99   342.80  max   549.07
