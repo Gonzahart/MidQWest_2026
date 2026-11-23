@@ -6,7 +6,7 @@ For one lost data qubit in an early, middle and final cycle, and each memory bas
   3. report prior/p_loss of each such column (the reweight rule clips this at 0.5).
 Also: global count of DEM columns dropped by the check-row projection that still flip an observable."""
 """
-  python check_herald_prior.py > results/herald_prior_check.txt
+  python check_herald_prior.py > results/03_herald_control/herald_prior_check.txt
 """
 import sys, numpy as np, stim
 sys.path.insert(0, sys.argv[1] if len(sys.argv) > 1 else '.')

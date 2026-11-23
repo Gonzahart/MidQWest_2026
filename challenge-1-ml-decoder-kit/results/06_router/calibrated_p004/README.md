@@ -47,7 +47,7 @@ a matched live comparison.
 ```bash
 python benchmark_timing.py --p 0.004 --p-loss 0 --shots 1000 --seed 7 \
   --decoders relay1+H relay+H live-relay \
-  --live-model results/router_calibrated_p004/selected_boosted.joblib \
+  --live-model results/06_router/calibrated_p004/selected_boosted.joblib \
   --out final_timing_p004_seed7.csv
 ```
 

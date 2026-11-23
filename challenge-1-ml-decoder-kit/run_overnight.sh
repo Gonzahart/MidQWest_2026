@@ -1,14 +1,14 @@
 #!/bin/bash
-# Overnight queue (BlueQubit, after the seed-14 and seed-26 runs). Everything writes to results/overnight/.
+# Overnight queue (BlueQubit, after the seed-14 and seed-26 runs). Everything writes to results/06_router/preregistered_s14_s26/.
 #   1. Fresh-seed confirmation of the net-benefit router (no loss), seed 14, all three p (pre-registered:
 #      primary = 10% budget vs simple rule at equal measured mean time, paired bootstrap; see econ_router.py).
 #   2. Loss-aware router: training (seed 22) and threshold (seed 24) data at 1% loss, p = 0.005 / 0.004.
 #   3. Loss-aware router test on seed 26 (data made by the previous queue step).
 #   bash run_overnight.sh > overnight.log 2>&1
 S=sweep.py
-O=results/overnight
-R=results
-L=results/loss_router
+O=results/06_router/preregistered_s14_s26
+R=results/06_router/caches   # relay-BP-1 / relay-BP-5 caches (seeds 2, 4, 14)
+L=results/06_router/loss_router
 mkdir -p $O $L
 W=${WORKERS:-20}
 

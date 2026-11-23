@@ -1,9 +1,9 @@
 """Evaluate the frozen six-bit truth-table router on a relay-BP-1 / relay-BP-5 pair of sweep files.
 
-  python truth_table_router.py results/relay1_p0.005_l0.0_unaware_s14_n10000_shard0of1.npz \
-                               results/relay5_p0.005_l0.0_unaware_s14_n10000_shard0of1.npz
+  python truth_table_router.py results/06_router/caches/relay1_p0.005_l0.0_unaware_s14_n10000_shard0of1.npz \
+                               results/06_router/caches/relay5_p0.005_l0.0_unaware_s14_n10000_shard0of1.npz
 
-The table (results/truth_table/truth_table_router_frozen.json) was frozen before the seed-14 test data
+The table (results/07_truth_table/table/truth_table_router_frozen.json) was frozen before the seed-14 test data
 existed. Nothing here is fitted to the files being evaluated. Both files must hold the same shots: same
 machine, seed and shot count (checked).
 

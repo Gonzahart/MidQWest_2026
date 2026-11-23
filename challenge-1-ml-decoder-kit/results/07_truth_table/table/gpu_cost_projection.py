@@ -1,12 +1,12 @@
 """Projection: the frozen six-bit table with GPU costs for the strong pass (estimate, not a measurement)."""
-"""Run from challenge-1-ml-decoder-kit: python "results/truth table/gpu_cost_projection.py"
+"""Run from challenge-1-ml-decoder-kit: python "results/07_truth_table/table/gpu_cost_projection.py"
 """
 import json, sys
 import numpy as np
 sys.path.insert(0, ".")
 from truth_table_router import load, keys, per_cycle
 
-spec = json.load(open("results/truth table/truth_table_router_frozen.json"))
+spec = json.load(open("results/07_truth_table/table/truth_table_router_frozen.json"))
 cells, cut, price = spec["cells"], spec["cut"], spec["price_failures_avoided_per_second"]
 
 def table_for(ratio):
@@ -41,8 +41,8 @@ def run(f1, f5, ratio, label):
     for n, e, f, m, q in out:
         print(f"{n:44s} {e:9.1%} {f:7d} {m:9.1f} {q:8.0f}")
 
-T = "results/timing/final timing/"
+T = "results/05_timing/final_timing/"
 for ratio in (10, 5):
-    run("results/relay1_p0.005_l0.0_unaware_s10_n10000_shard0of1.npz", "results/relay5_p0.005_l0.0_unaware_s10_n10000_shard0of1.npz", ratio, "p = 0.005, seed 10, 10k pairs (20-worker times)")
+    run("results/06_router/caches/relay1_p0.005_l0.0_unaware_s10_n10000_shard0of1.npz", "results/06_router/caches/relay5_p0.005_l0.0_unaware_s10_n10000_shard0of1.npz", ratio, "p = 0.005, seed 10, 10k pairs (20-worker times)")
 run(T + "relay1_p0.005_l0.0_unaware_s16_n1000_shard0of1.npz", T + "relay5_p0.005_l0.0_unaware_s16_n1000_shard0of1.npz", 10, "p = 0.005, seed 16, 1k pairs (single-worker times)")
 run(T + "relay1_p0.004_l0.0_unaware_s16_n1000_shard0of1.npz", T + "relay5_p0.004_l0.0_unaware_s16_n1000_shard0of1.npz", 8, "p = 0.004, seed 16, 1k pairs (single-worker times)")

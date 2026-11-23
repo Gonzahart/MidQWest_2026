@@ -51,9 +51,9 @@ From `challenge-1-ml-decoder-kit` in WSL:
 
 ```bash
 .venv/bin/python -m pytest test_kit.py -q
-PYTHONPATH=. .venv/bin/python -u 'results/Sean GPU-relay/gpu_check.py' --p 0.004 --shots 1000 --seed 8 --out 'results/Sean GPU-relay/gpu_check_p0.004_s8.csv'
-PYTHONPATH=. .venv/bin/python -u 'results/Sean GPU-relay/gpu_check.py' --p 0.003 --shots 1000 --seed 8 --out 'results/Sean GPU-relay/gpu_check_p0.003_s8.csv'
-PYTHONPATH=. .venv/bin/python -u 'results/Sean GPU-relay/gpu_check.py' --p 0.005 --shots 1000 --seed 8 --out 'results/Sean GPU-relay/gpu_check_p0.005_s8.csv'
+PYTHONPATH=. .venv/bin/python -u 'results/08_gpu/gpu_check.py' --p 0.004 --shots 1000 --seed 8 --out 'results/08_gpu/gpu_check_p0.004_s8.csv'
+PYTHONPATH=. .venv/bin/python -u 'results/08_gpu/gpu_check.py' --p 0.003 --shots 1000 --seed 8 --out 'results/08_gpu/gpu_check_p0.003_s8.csv'
+PYTHONPATH=. .venv/bin/python -u 'results/08_gpu/gpu_check.py' --p 0.005 --shots 1000 --seed 8 --out 'results/08_gpu/gpu_check_p0.005_s8.csv'
 ```
 
 The CSV contains one summary row per decoder. Each matching NPZ contains CPU/GPU failure and seconds arrays with shape (shots, 2) in X, Z order, logical agreement flags, GPU iterations and per-basis GPU prior rebuild costs.

@@ -39,4 +39,4 @@ Paired: frozen vs relay-BP-1 4/26 (p = 6e-5); frozen vs simple rule 37/33 (p = 0
 - Not confirmed: the GPU-priced table beating relay-BP-5. It ties (801 vs 808, 106 vs 104). Pooled with seed 10: 185/220, p = 0.09. Claim "matches relay-BP-5 accuracy while sending 40-60% of shots to the strong pass", not "beats it".
 - Candidate: about 10% less mean time at p = 0.005, with accuracy unchanged within noise.
 
-Reproduce: `python truth_table_router.py --table "results/truth table/<table>.json" results/fresh_s32/relay1_...npz results/fresh_s32/relay5_...npz`; candidate: `python results/fresh_s32/score_candidate_s32.py` from the kit folder.
+Reproduce: `python truth_table_router.py --table "results/07_truth_table/table/<table>.json" results/06_router/fresh_s32/relay1_...npz results/06_router/fresh_s32/relay5_...npz`; candidate: `python results/06_router/fresh_s32/score_candidate_s32.py` from the kit folder.

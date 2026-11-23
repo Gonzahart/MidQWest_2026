@@ -6,4 +6,4 @@ __pycache__/
 *.log
 # large training datasets stay local; per-shot sweep results (small) are committed
 *.npz
-!challenge-1-ml-decoder-kit/results/*.npz
+!challenge-1-ml-decoder-kit/results/**/*.npz
